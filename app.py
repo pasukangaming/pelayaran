@@ -367,65 +367,62 @@ def scrape_step():
     )
     edit_telegram_message(token, user_chat_id, message_id, progress_text)
     
-    # Scrape the current source
-    jobs = []
+    # Secure try block to ensure failure does not stop the step progression
     try:
-        if src["type"] == "built-in":
-            if src["name"] == "Crewell":
-                jobs = scrapers.scrape_crewell()
-            elif src["name"] == "JobMarineMan":
-                pass
-            else:
-                jobs = scrapers.scrape_generic(src["url"])
-        elif src["type"] == "rss":
-            jobs = scrapers.scrape_rss(src["url"])
-        else:
+        jobs = []
+        try:
             jobs = scrapers.scrape_generic(src["url"])
-    except Exception as e:
-        print(f"Error scraping {src['name']}: {e}")
-        
-    new_jobs_from_source = 0
-    for job in reversed(jobs):
-        job_id = job["id"]
-        db_helper.save_job(job)
-        if not db_helper.is_job_sent(job_id):
-            message = (
-                f"🚢 <b>LOWONGAN PELAUT BARU</b>\n\n"
-                f"💼 <b>Posisi:</b> {scrapers.escape_html(job['position'])}\n"
-                f"🛥 <b>Jenis Kapal:</b> {scrapers.escape_html(job['vessel_type'])}\n"
-                f"💵 <b>Gaji:</b> {scrapers.escape_html(job['salary'])}\n"
-                f"📅 <b>Join Date:</b> {scrapers.escape_html(job['join_date'])}\n"
-                f"⏱ <b>Kontrak:</b> {scrapers.escape_html(job['duration'])}\n"
-                f"🏢 <b>Perusahaan:</b> {scrapers.escape_html(job['company'])}\n\n"
-                f"🔗 <a href='{job['link']}'>Detail &amp; Apply Loker</a>"
-            )
-            success = send_telegram_message(token, chat_id, message)
-            if success and success.get("ok"):
-                db_helper.mark_job_as_sent(job_id)
-                new_jobs_from_source += 1
-                
-                # Send private alerts to category subscribers
-                job_cat = categorize_job(job["position"])
-                if job_cat != "other":
-                    subs = db_helper.get_subscribers_by_category(job_cat)
-                    alert_msg = (
-                        f"🔔 <b>[ALERT LANGGANAN] Loker Baru Sesuai Departemen Anda!</b>\n\n"
+        except Exception as e:
+            print(f"Error scraping {src['name']}: {e}")
+            
+        new_jobs_from_source = 0
+        for job in reversed(jobs):
+            try:
+                job_id = job["id"]
+                db_helper.save_job(job)
+                if not db_helper.is_job_sent(job_id):
+                    message = (
+                        f"🚢 <b>LOWONGAN PELAUT BARU</b>\n\n"
                         f"💼 <b>Posisi:</b> {scrapers.escape_html(job['position'])}\n"
-                        f"🏢 <b>Perusahaan:</b> {scrapers.escape_html(job['company'])}\n"
+                        f"🛥 <b>Jenis Kapal:</b> {scrapers.escape_html(job['vessel_type'])}\n"
                         f"💵 <b>Gaji:</b> {scrapers.escape_html(job['salary'])}\n"
+                        f"📅 <b>Join Date:</b> {scrapers.escape_html(job['join_date'])}\n"
+                        f"⏱ <b>Kontrak:</b> {scrapers.escape_html(job['duration'])}\n"
+                        f"🏢 <b>Perusahaan:</b> {scrapers.escape_html(job['company'])}\n\n"
                         f"🔗 <a href='{job['link']}'>Detail &amp; Apply Loker</a>"
                     )
-                    for sub_chat_id in subs:
-                        send_telegram_message(token, sub_chat_id, alert_msg)
+                    success = send_telegram_message(token, chat_id, message)
+                    if success and success.get("ok"):
+                        db_helper.mark_job_as_sent(job_id)
+                        new_jobs_from_source += 1
                         
-                time.sleep(1)
+                        # Send private alerts to category subscribers
+                        job_cat = categorize_job(job["position"])
+                        if job_cat != "other":
+                            subs = db_helper.get_subscribers_by_category(job_cat)
+                            alert_msg = (
+                                f"🔔 <b>[ALERT LANGGANAN] Loker Baru Sesuai Departemen Anda!</b>\n\n"
+                                f"💼 <b>Posisi:</b> {scrapers.escape_html(job['position'])}\n"
+                                f"🏢 <b>Perusahaan:</b> {scrapers.escape_html(job['company'])}\n"
+                                f"💵 <b>Gaji:</b> {scrapers.escape_html(job['salary'])}\n"
+                                f"🔗 <a href='{job['link']}'>Detail &amp; Apply Loker</a>"
+                            )
+                            for sub_chat_id in subs:
+                                send_telegram_message(token, sub_chat_id, alert_msg)
+                                
+                        time.sleep(1)
+            except Exception as inner_e:
+                print(f"Error processing job: {inner_e}")
                 
-    # Update state
-    if len(jobs) > 0:
-        results_summary.append(f"• <b>{src['name']}</b>: {len(jobs)} loker ({new_jobs_from_source} baru)")
-        new_jobs_total += new_jobs_from_source
-        db_helper.set_setting("scrape_state_results", json.dumps(results_summary))
-        db_helper.set_setting("scrape_state_new_jobs", str(new_jobs_total))
+        # Update state
+        if len(jobs) > 0 or new_jobs_from_source > 0:
+            results_summary.append(f"• <b>{src['name']}</b>: {len(jobs)} loker ({new_jobs_from_source} baru)")
+            new_jobs_total += new_jobs_from_source
+            db_helper.set_setting("scrape_state_results", json.dumps(results_summary))
+            db_helper.set_setting("scrape_state_new_jobs", str(new_jobs_total))
+            
+    except Exception as outer_e:
+        print(f"Outer loop error on {src['name']}: {outer_e}")
         
     # Trigger next step via HTTP request to ourselves (non-blocking) via Google Apps Script Proxy to bypass PythonAnywhere sandbox blocking
     host = request.host
