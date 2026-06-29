@@ -95,10 +95,23 @@ def get_agencies_menu_markup():
                 {"text": "🏨 Landbase Hotel (P3MI)", "callback_data": "list_agencies:landbase"}
             ],
             [
+                {"text": "➕ Tambah Agency", "callback_data": "menu_add_agency"},
+                {"text": "❌ Hapus Agency", "callback_data": "menu_delete_agency_list"}
+            ],
+            [
                 {"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}
             ]
         ]
     }
+
+def get_delete_agencies_markup(agencies):
+    keyboard = []
+    for ag in agencies:
+        keyboard.append([
+            {"text": f"❌ Hapus {ag['name'][:25]}...", "callback_data": f"delete_agency:{ag['id']}"}
+        ])
+    keyboard.append([{"text": "🔙 Kembali", "callback_data": "menu_agencies"}])
+    return {"inline_keyboard": keyboard}
 
 def get_settings_markup(current_interval):
     intervals = ["1", "3", "6", "12", "24"]
@@ -357,6 +370,29 @@ def webhook():
                 else:
                     send_telegram_message(token, user_chat_id, "❌ Format URL tidak valid. Harus diawali dengan http:// atau https://")
                 
+            elif state == "awaiting_agency_data":
+                parts = [p.strip() for p in text.split("|")]
+                if len(parts) >= 3:
+                    name = parts[0]
+                    license_no = parts[1]
+                    raw_type = parts[2].lower()
+                    
+                    agency_type = "Kapal Pesiar"
+                    if "landbase" in raw_type or "hotel" in raw_type or "darat" in raw_type:
+                        agency_type = "Landbase (Hotel Darat)"
+                        
+                    address = parts[3] if len(parts) > 3 else ""
+                    contact = parts[4] if len(parts) > 4 else ""
+                    website = parts[5] if len(parts) > 5 else ""
+                    
+                    success = db_helper.add_agency(name, license_no, agency_type, address, contact, website)
+                    if success:
+                        send_telegram_message(token, user_chat_id, f"✅ Agency <b>{name}</b> berhasil ditambahkan ke database!")
+                    else:
+                        send_telegram_message(token, user_chat_id, "❌ Gagal menambahkan. Agency mungkin sudah terdaftar.")
+                else:
+                    send_telegram_message(token, user_chat_id, "❌ Format tidak valid. Pastikan menyertakan minimal: Nama | Izin | Kategori")
+                
                 db_helper.set_user_state(user_chat_id, "normal")
                 send_telegram_message(token, user_chat_id, "Kembali ke Menu Utama:", get_main_menu_markup())
                 
@@ -416,6 +452,40 @@ def webhook():
                 ]
             }
             edit_telegram_message(token, user_chat_id, message_id, text, markup)
+            
+        elif callback_data == "menu_add_agency":
+            answer_callback_query(token, callback_query_id)
+            db_helper.set_user_state(user_chat_id, "awaiting_agency_data")
+            edit_telegram_message(
+                token, 
+                user_chat_id, 
+                message_id, 
+                "➕ <b>Tambah Agency Resmi Baru</b>\n\n"
+                "Silakan kirimkan data agency baru dengan format berikut (pisahkan dengan karakter |):\n"
+                "<code>Nama Agency | Nomor Izin | Kategori (Kapal Pesiar atau Landbase) | Alamat | Kontak | Website</code>\n\n"
+                "Contoh:\n"
+                "<code>PT Nusantara Raya | P3MI No. 99/2026 | Landbase | Jl. Sudirman No. 10 | +628123456 | https://nusantararaya.com</code>\n\n"
+                "<i>Bot akan menunggu input teks dari Anda...</i>",
+                {"inline_keyboard": [[{"text": "🔙 Batal", "callback_data": "menu_agencies"}]]}
+            )
+            
+        elif callback_data == "menu_delete_agency_list":
+            answer_callback_query(token, callback_query_id)
+            agencies = db_helper.get_agencies()
+            text_del = "❌ <b>Hapus Agency Dari Direktori</b>\n\nPilih agency di bawah ini yang ingin dihapus dari daftar bot:"
+            edit_telegram_message(token, user_chat_id, message_id, text_del, get_delete_agencies_markup(agencies))
+            
+        elif callback_data.startswith("delete_agency:"):
+            agency_id = callback_data.split(":")[-1]
+            deleted = db_helper.delete_agency(agency_id)
+            if deleted:
+                answer_callback_query(token, callback_query_id, "Agency berhasil dihapus.")
+            else:
+                answer_callback_query(token, callback_query_id, "Gagal menghapus agency.")
+                
+            agencies = db_helper.get_agencies()
+            text_del = "❌ <b>Hapus Agency Dari Direktori</b>\n\nPilih agency di bawah ini yang ingin dihapus dari daftar bot:"
+            edit_telegram_message(token, user_chat_id, message_id, text_del, get_delete_agencies_markup(agencies))
             
         elif callback_data == "menu_settings":
             answer_callback_query(token, callback_query_id)

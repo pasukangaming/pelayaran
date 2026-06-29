@@ -267,3 +267,36 @@ def get_agencies_by_type(agency_type):
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+def get_agencies():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name, license_no, type, address, contact, website FROM agencies ORDER BY name ASC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def add_agency(name, license_no, agency_type, address="", contact="", website=""):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    success = False
+    try:
+        cursor.execute("""
+            INSERT INTO agencies (name, license_no, type, address, contact, website) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (name, license_no, agency_type, address, contact, website))
+        conn.commit()
+        success = True
+    except sqlite3.IntegrityError:
+        print(f"Agency already exists: {name}")
+    conn.close()
+    return success
+
+def delete_agency(agency_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM agencies WHERE id = ?", (agency_id,))
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return deleted
