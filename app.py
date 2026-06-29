@@ -102,10 +102,9 @@ def get_main_menu_markup():
             ],
             [
                 {"text": "⚙️ Atur Interval", "callback_data": "menu_settings"},
-                {"text": "📋 Daftar Sumber", "callback_data": "menu_sources"}
+                {"text": "🔄 Cek Loker Sekarang", "callback_data": "menu_scrape"}
             ],
             [
-                {"text": "🔄 Cek Loker Sekarang", "callback_data": "menu_scrape"},
                 {"text": "📢 Bagikan Bot", "callback_data": "menu_share"}
             ]
         ]
@@ -217,19 +216,6 @@ def get_settings_markup(current_interval):
     keyboard.append([{"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}])
     return {"inline_keyboard": keyboard}
 
-def get_sources_markup(sources):
-    keyboard = []
-    for src in sources:
-        if src["type"] != "built-in":
-            keyboard.append([
-                {"text": f"❌ Hapus {src['name'][:20]}...", "callback_data": f"delete_source:{src['id']}"}
-            ])
-    keyboard.append([
-        {"text": "➕ Tambah Web Agency (Scrape)", "callback_data": "menu_add_source"},
-        {"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}
-    ])
-    return {"inline_keyboard": keyboard}
-
 # Business Logic for Scraper (Used by Cron)
 def run_scrape_and_post(manual_trigger=False, user_chat_id=None):
     token, chat_id = get_bot_credentials()
@@ -248,12 +234,17 @@ def run_scrape_and_post(manual_trigger=False, user_chat_id=None):
             print(msg)
             return False, msg
             
-    print("Starting parallel scrape of all sources...")
-    sources = db_helper.get_sources()
+    print("Starting parallel scrape of all official agencies...")
+    agencies = db_helper.get_agencies()
+    sources = [
+        {"name": ag["name"], "url": ag["website"], "type": "web"}
+        for ag in agencies
+        if ag["website"] and (ag["website"].startswith("http://") or ag["website"].startswith("https://"))
+    ]
     
     # Run parallel scrape via Google Apps Script Proxy
     jobs = scrapers.scrape_all_sources_parallel(sources)
-    print(f"Parallel scrape returned {len(jobs)} total jobs.")
+    print(f"Parallel scrape returned {len(jobs)} total jobs from {len(sources)} agencies.")
     
     new_jobs_count = 0
     for job in reversed(jobs):
@@ -331,7 +322,12 @@ def scrape_step():
     if not token or not chat_id:
         return jsonify({"status": "error", "message": "Credentials missing"})
         
-    sources = db_helper.get_sources()
+    agencies = db_helper.get_agencies()
+    sources = [
+        {"name": ag["name"], "url": ag["website"], "type": "web"}
+        for ag in agencies
+        if ag["website"] and (ag["website"].startswith("http://") or ag["website"].startswith("https://"))
+    ]
     total_sources = len(sources)
     
     # Load state from DB
@@ -485,19 +481,7 @@ def webhook():
             
         else:
             state = db_helper.get_user_state(user_chat_id)
-            if state == "awaiting_source_url":
-                if text.startswith("http://") or text.startswith("https://"):
-                    parsed_url = urllib.parse.urlparse(text)
-                    domain = parsed_url.netloc.replace("www.", "")
-                    success = db_helper.add_source(name=domain, url=text, s_type="web")
-                    if success:
-                        send_telegram_message(token, user_chat_id, "✅ Website Karir Agency berhasil ditambahkan ke daftar scrape!")
-                    else:
-                        send_telegram_message(token, user_chat_id, "❌ URL Agency ini sudah terdaftar di database.")
-                else:
-                    send_telegram_message(token, user_chat_id, "❌ Format URL tidak valid. Harus diawali dengan http:// atau https://")
-                
-            elif state == "awaiting_agency_data":
+            if state == "awaiting_agency_data":
                 parts = [p.strip() for p in text.split("|")]
                 if len(parts) >= 3:
                     name = parts[0]
@@ -930,49 +914,7 @@ def webhook():
                 get_settings_markup(hours)
             )
             
-        elif callback_data == "menu_sources":
-            answer_callback_query(token, callback_query_id)
-            sources = db_helper.get_sources()
-            text_sources = (
-                "📋 <b>Daftar Web Agency yang Di-scrape Aktif:</b>\n\n"
-                "<i>Bot akan memindai halaman karir dari agensi resmi berikut untuk mencari lowongan terbaru secara otomatis.</i>\n\n"
-            )
-            for idx, src in enumerate(sources):
-                text_sources += f"{idx+1}. <b>{src['name']}</b> ({src['type']})\nURL: <code>{src['url']}</code>\n\n"
-            
-            edit_telegram_message(token, user_chat_id, message_id, text_sources, get_sources_markup(sources))
-            
-        elif callback_data == "menu_add_source":
-            answer_callback_query(token, callback_query_id)
-            db_helper.set_user_state(user_chat_id, "awaiting_source_url")
-            edit_telegram_message(
-                token, 
-                user_chat_id, 
-                message_id, 
-                "➕ <b>Tambah Halaman Karir Agency Baru</b>\n\n"
-                "Silakan ketik dan kirimkan link URL halaman lowongan/karir (atau RSS feed) dari agency resmi baru yang ingin ditambahkan ke daftar scrape.\n\n"
-                "Contoh: <code>https://wintermar.com/careers</code>\n\n"
-                "<i>Bot akan menunggu input link URL dari Anda...</i>",
-                {"inline_keyboard": [[{"text": "🔙 Batal", "callback_data": "menu_sources"}]]}
-            )
-            
-        elif callback_data.startswith("delete_source:"):
-            source_id = callback_data.split(":")[-1]
-            deleted = db_helper.delete_source(source_id)
-            
-            if deleted:
-                answer_callback_query(token, callback_query_id, "Web karir agency berhasil dihapus.")
-            else:
-                answer_callback_query(token, callback_query_id, "Gagal menghapus (Sumber Bawaan tidak bisa dihapus).")
-                
-            sources = db_helper.get_sources()
-            text_sources = (
-                "📋 <b>Daftar Web Agency yang Di-scrape Aktif:</b>\n\n"
-                "<i>Bot akan memindai halaman karir dari agensi resmi berikut untuk mencari lowongan terbaru secara otomatis.</i>\n\n"
-            )
-            for idx, src in enumerate(sources):
-                text_sources += f"{idx+1}. <b>{src['name']}</b> ({src['type']})\nURL: <code>{src['url']}</code>\n\n"
-            edit_telegram_message(token, user_chat_id, message_id, text_sources, get_sources_markup(sources))
+
             
         elif callback_data == "menu_scrape":
             answer_callback_query(token, callback_query_id, "Scraping dimulai...")
