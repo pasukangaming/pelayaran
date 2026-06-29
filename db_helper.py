@@ -67,11 +67,11 @@ DEFAULT_AGENCIES = [
     ("PT Indo Semesta Lestari", "P3MI", "Landbase (Hotel Darat)", 
          "Jl. Letjen S. Parman Kav. 21, Slipi, Jakarta Barat", "+62 21 530 1234 / recruitment@indosemesta.co.id", ""),
     ("Cast-A-Way Cruise Recruiting (Hospitality)", "Official International Agency", "Kapal Pesiar & Hospitality", 
-         "International Recruiting Office", "info@cast-a-way.com", "https://cast-a-way.com/hospitality/"),
+         "International Recruiting Office", "info@cast-a-way.com / IG: https://www.instagram.com/castawayindonesia/", "https://cast-a-way.com/hospitality/"),
     ("Cast-A-Way Cruise Recruiting (F&B)", "Official International Agency", "Kapal Pesiar & Hospitality", 
-         "International Recruiting Office", "info@cast-a-way.com", "https://cast-a-way.com/fb-operations/"),
+         "International Recruiting Office", "info@cast-a-way.com / IG: https://www.instagram.com/castawayindonesia/", "https://cast-a-way.com/fb-operations/"),
     ("Cast-A-Way Cruise Recruiting (Spa)", "Official International Agency", "Kapal Pesiar & Hospitality", 
-         "International Recruiting Office", "info@cast-a-way.com", "https://cast-a-way.com/spa/")
+         "International Recruiting Office", "info@cast-a-way.com / IG: https://www.instagram.com/castawayindonesia/", "https://cast-a-way.com/spa/")
 ]
 
 def get_db_connection():
