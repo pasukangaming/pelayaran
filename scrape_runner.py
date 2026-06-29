@@ -1,4 +1,9 @@
+import os
 import sys
+
+# Ensure project directory is in path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 import time
 import requests
 import db_helper

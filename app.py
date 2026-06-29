@@ -371,6 +371,7 @@ def webhook():
                 [sys.executable, os.path.join(os.path.dirname(__file__), "scrape_runner.py"), str(user_chat_id), str(message_id)],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
+                cwd=os.path.dirname(__file__),
                 start_new_session=True
             )
             
