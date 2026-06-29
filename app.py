@@ -861,6 +861,7 @@ def webhook():
         elif callback_data == "menu_stats":
             answer_callback_query(token, callback_query_id)
             stats = db_helper.get_stats()
+            _, target_chat_id = get_bot_credentials()
             
             last_run = int(db_helper.get_setting("last_run", 0))
             if last_run > 0:
@@ -876,7 +877,8 @@ def webhook():
                 f"• <b>Total Agensi Terdaftar:</b> {stats['total_agencies']} agensi\n"
                 f"• <b>Total Pelanggan Alert:</b> {stats['total_subscribers']} user\n\n"
                 f"⏱ <b>Interval Scraping:</b> {interval} Jam sekali\n"
-                f"🔄 <b>Terakhir Dipindai:</b> <code>{local_time}</code>\n\n"
+                f"🔄 <b>Terakhir Dipindai:</b> <code>{local_time}</code>\n"
+                f"📢 <b>Target Group ID:</b> <code>{target_chat_id}</code>\n\n"
                 f"<i>Sistem berjalan otomatis di server PythonAnywhere secara realtime.</i>"
             )
             
