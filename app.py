@@ -184,7 +184,7 @@ def test_telegram():
     if not token:
         return jsonify({"status": "error", "message": "No token configured"})
     
-    url = f"https://api.telegram.org/bot{token}/getMe"
+    url = f"https://api.telegram-proxy.org/bot{token}/getMe"
     try:
         start_time = time.time()
         response = requests.get(url, timeout=5)
