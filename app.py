@@ -178,40 +178,6 @@ def run_cron():
     success, message = run_scrape_and_post(manual_trigger=False)
     return jsonify({"success": success, "message": message})
 
-@app.route("/test-telegram")
-def test_telegram():
-    token = db_helper.get_setting("telegram_bot_token")
-    if not token:
-        return jsonify({"status": "error", "message": "No token configured"})
-    
-    mirrors = {
-        "official": "https://api.telegram.org",
-        "tgproxy_pa": "https://tgproxy.pythonanywhere.com",
-        "tapi_radiy": "https://tapi.radiy.tk",
-        "del_dog": "https://tg.del.dog",
-        "telegg_ru": "https://telegg.ru"
-    }
-    
-    results = {}
-    for name, base_url in mirrors.items():
-        url = f"{base_url}/bot{token}/getMe"
-        try:
-            start_time = time.time()
-            response = requests.get(url, timeout=4)
-            elapsed = time.time() - start_time
-            results[name] = {
-                "status_code": response.status_code,
-                "elapsed": f"{elapsed:.2f}s",
-                "body_preview": response.text[:150]
-            }
-        except Exception as e:
-            results[name] = {
-                "status": "error",
-                "message": str(e)[:150]
-            }
-            
-    return jsonify(results)
-
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
@@ -361,4 +327,5 @@ def webhook():
 
 if __name__ == "__main__":
     # Local run config
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
