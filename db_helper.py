@@ -71,7 +71,9 @@ DEFAULT_AGENCIES = [
     ("Cast-A-Way Cruise Recruiting (F&B)", "Official International Agency", "Kapal Pesiar & Hospitality", 
          "International Recruiting Office", "info@cast-a-way.com / IG: https://www.instagram.com/castawayindonesia/", "https://cast-a-way.com/fb-operations/"),
     ("Cast-A-Way Cruise Recruiting (Spa)", "Official International Agency", "Kapal Pesiar & Hospitality", 
-         "International Recruiting Office", "info@cast-a-way.com / IG: https://www.instagram.com/castawayindonesia/", "https://cast-a-way.com/spa/")
+         "International Recruiting Office", "info@cast-a-way.com / IG: https://www.instagram.com/castawayindonesia/", "https://cast-a-way.com/spa/"),
+    ("PT Marine Pride Service (MPS)", "SIUPPAK & P3MI", "Kapal Pesiar & Merchant", 
+         "Ruko Gading Kirana, Jl. Kirana Avenue No. 23, Kelapa Gading, Jakarta Utara", "info@mpsjakarta.com", "https://www.mpsjakarta.com/")
 ]
 
 def get_db_connection():
