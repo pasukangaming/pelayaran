@@ -647,6 +647,8 @@ def webhook():
                     text += f"   📞 <b>Kontak:</b> <code>{ag['contact']}</code>\n"
                 if ag['website']:
                     text += f"   🌐 <b>Web:</b> <a href='{ag['website']}'>{ag['name']}</a>\n"
+                if ag.get('created_at'):
+                    text += f"   📅 <b>Terdaftar:</b> <code>{ag['created_at']}</code>\n"
                 text += "\n"
                 
             markup = {
@@ -754,6 +756,8 @@ def webhook():
                         text += f"   📞 <b>Kontak:</b> <code>{ag['contact']}</code>\n"
                     if ag['website']:
                         text += f"   🌐 <b>Web:</b> <a href='{ag['website']}'>{ag['name']}</a>\n"
+                    if ag.get('created_at'):
+                        text += f"   📅 <b>Terdaftar:</b> <code>{ag['created_at']}</code>\n"
                     text += "\n"
             else:
                 text += "❌ Belum ada agency terdaftar di wilayah ini."

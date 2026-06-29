@@ -35,7 +35,7 @@ DEFAULT_AGENCIES = [
     ("PT Elite International Recruitment", "P3MI", "Landbase (Hotel Darat)", 
          "Sudirman Plaza, Plaza Marein Lt. 17, Jl. Jend. Sudirman Kav. 76-78, Jakarta Selatan", "+62 21 5793 1234 / info@elitekarir.com", ""),
     ("PT Bidar Timur", "P3MI", "Landbase (Hotel Darat)", 
-         "Jl. Jend. A. Ya`ni No. 10, Utan Kayu Utara, Matraman, Jakarta Timur", "+62 21 8591 1111 / info@bidartimur.co.id", "http://www.bidartimur.co.id/"),
+         "Jl. Jend. A. Yani No. 10, Utan Kayu Utara, Matraman, Jakarta Timur", "+62 21 8591 1111 / info@bidartimur.co.id", "http://www.bidartimur.co.id/"),
     ("PT Timuraya Jaya Lestari", "P3MI", "Landbase (Hotel Darat)", 
          "Rukan Puri Mutiara Blok A No. 107, Jl. Griya Utama, Sunter Agung, Jakarta Utara", "+62 21 6583 4567 / recruitment@timurayajayalestari.co.id", "http://www.timurayajayalestari.co.id/"),
     ("PT Sahara Fajar Semesta", "P3MI", "Landbase (Hotel Darat)", 
@@ -114,10 +114,22 @@ def init_db(default_token=None, default_chat_id=None):
             type TEXT,
             address TEXT,
             contact TEXT,
-            website TEXT
+            website TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
     
+    # Check if created_at column exists in agencies table, if not alter the table
+    try:
+        cursor.execute("SELECT created_at FROM agencies LIMIT 1")
+    except sqlite3.OperationalError:
+        try:
+            cursor.execute("ALTER TABLE agencies ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+            conn.commit()
+            print("Successfully added created_at column to agencies table via migration.")
+        except Exception as e:
+            print(f"Error altering agencies table: {e}")
+            
     # Create jobs table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS jobs (
@@ -297,11 +309,11 @@ def get_agencies_by_type(agency_type):
     conn = get_db_connection()
     cursor = conn.cursor()
     if agency_type == "cruise":
-        cursor.execute("SELECT name, license_no, type, address, contact, website FROM agencies WHERE type LIKE '%Kapal Pesiar%'")
+        cursor.execute("SELECT name, license_no, type, address, contact, website, created_at FROM agencies WHERE type LIKE '%Kapal Pesiar%'")
     elif agency_type == "landbase":
-        cursor.execute("SELECT name, license_no, type, address, contact, website FROM agencies WHERE type LIKE '%Landbase%'")
+        cursor.execute("SELECT name, license_no, type, address, contact, website, created_at FROM agencies WHERE type LIKE '%Landbase%'")
     else:
-        cursor.execute("SELECT name, license_no, type, address, contact, website FROM agencies")
+        cursor.execute("SELECT name, license_no, type, address, contact, website, created_at FROM agencies")
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
@@ -310,7 +322,7 @@ def get_agencies_by_location(loc_name):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT name, license_no, type, address, contact, website 
+        SELECT name, license_no, type, address, contact, website, created_at 
         FROM agencies 
         WHERE address LIKE ? 
         ORDER BY name ASC
@@ -322,7 +334,7 @@ def get_agencies_by_location(loc_name):
 def get_agencies():
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, name, license_no, type, address, contact, website FROM agencies ORDER BY name ASC")
+    cursor.execute("SELECT id, name, license_no, type, address, contact, website, created_at FROM agencies ORDER BY name ASC")
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
@@ -333,8 +345,8 @@ def add_agency(name, license_no, agency_type, address="", contact="", website=""
     success = False
     try:
         cursor.execute("""
-            INSERT INTO agencies (name, license_no, type, address, contact, website) 
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO agencies (name, license_no, type, address, contact, website, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
         """, (name, license_no, agency_type, address, contact, website))
         conn.commit()
         success = True
@@ -462,12 +474,10 @@ def sync_default_agencies():
     cursor.execute("SELECT COUNT(*) FROM agencies")
     before = cursor.fetchone()[0]
     
-    # We will use INSERT OR IGNORE so we don't overwrite user changes, 
-    # but still add any missing default official ones!
     for name, lic, a_type, addr, cont, web in DEFAULT_AGENCIES:
         cursor.execute("""
-            INSERT OR IGNORE INTO agencies (name, license_no, type, address, contact, website) 
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT OR IGNORE INTO agencies (name, license_no, type, address, contact, website, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
         """, (name, lic, a_type, addr, cont, web))
         
     conn.commit()
