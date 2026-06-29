@@ -75,6 +75,14 @@ def init_db(default_token=None, default_chat_id=None):
         )
     """)
     
+    # Create subscribers table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS subscribers (
+            chat_id INTEGER PRIMARY KEY,
+            category TEXT
+        )
+    """)
+    
     conn.commit()
     
     # Populate default settings
@@ -294,6 +302,19 @@ def get_agencies_by_type(agency_type):
     conn.close()
     return [dict(row) for row in rows]
 
+def get_agencies_by_location(loc_name):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT name, license_no, type, address, contact, website 
+        FROM agencies 
+        WHERE address LIKE ? 
+        ORDER BY name ASC
+    """, (f"%{loc_name}%",))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
 def get_agencies():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -377,3 +398,35 @@ def get_jobs_by_keywords(keywords):
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+def subscribe_user(chat_id, category):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR REPLACE INTO subscribers (chat_id, category) VALUES (?, ?)", (chat_id, category))
+    conn.commit()
+    conn.close()
+
+def unsubscribe_user(chat_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM subscribers WHERE chat_id = ?", (chat_id,))
+    conn.commit()
+    conn.close()
+
+def get_subscribers_by_category(category):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT chat_id FROM subscribers WHERE category = ?", (category,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [row["chat_id"] for row in rows]
+
+def get_user_subscription(chat_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT category FROM subscribers WHERE chat_id = ?", (chat_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return row["category"]
+    return None

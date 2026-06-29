@@ -24,7 +24,22 @@ def get_bot_credentials():
     token = db_helper.get_setting("telegram_bot_token")
     chat_id = db_helper.get_setting("telegram_chat_id")
     return token, chat_id
-
+def categorize_job(position):
+    pos_lower = position.lower()
+    deck_kws = ['master', 'captain', 'mate', 'officer', 'deck', 'bosun', 'ab ', 'os ', 'cadet', 'helmsman', 'jurumudi', 'kelasi']
+    engine_kws = ['engineer', 'engine', 'oiler', 'wiper', 'fitter', 'electrician', 'motorman']
+    galley_kws = ['cook', 'steward', 'messboy', 'waiter', 'chef', 'galley', 'laundry', 'utility']
+    landbase_kws = ['housekeeping', 'receptionist', 'front office', 'spa ', 'hotel darat', 'butler', 'cleaner', 'landbase']
+    
+    if any(kw in pos_lower for kw in deck_kws):
+        return "deck"
+    elif any(kw in pos_lower for kw in engine_kws):
+        return "engine"
+    elif any(kw in pos_lower for kw in galley_kws):
+        return "galley"
+    elif any(kw in pos_lower for kw in landbase_kws):
+        return "landbase"
+    return "other"
 def send_telegram_message(token, chat_id, text, reply_markup=None):
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {
@@ -78,17 +93,35 @@ def get_main_menu_markup():
                 {"text": "💼 Lowongan Per Jabatan", "callback_data": "menu_jobs"}
             ],
             [
-                {"text": "🏢 Daftar Agency Resmi", "callback_data": "menu_agencies"}
+                {"text": "🏢 Daftar Agency Resmi", "callback_data": "menu_agencies"},
+                {"text": "🔔 Langganan Loker", "callback_data": "menu_subscribe"}
             ],
             [
                 {"text": "⚙️ Atur Interval", "callback_data": "menu_settings"},
                 {"text": "📋 Daftar Sumber", "callback_data": "menu_sources"}
             ],
             [
-                {"text": "🔄 Cek Loker Sekarang", "callback_data": "menu_scrape"}
+                {"text": "🔄 Cek Loker Sekarang", "callback_data": "menu_scrape"},
+                {"text": "📢 Bagikan Bot", "callback_data": "menu_share"}
             ]
         ]
     }
+
+def get_subscribe_markup(current_sub):
+    keyboard = [
+        [
+            {"text": "🚢 Deck" + (" (Aktif)" if current_sub == "deck" else ""), "callback_data": "sub:deck"},
+            {"text": "🔧 Engine" + (" (Aktif)" if current_sub == "engine" else ""), "callback_data": "sub:engine"}
+        ],
+        [
+            {"text": "🍽 Galley" + (" (Aktif)" if current_sub == "galley" else ""), "callback_data": "sub:galley"},
+            {"text": "🏨 Hotel" + (" (Aktif)" if current_sub == "landbase" else ""), "callback_data": "sub:landbase"}
+        ]
+    ]
+    if current_sub:
+        keyboard.append([{"text": "🔕 Berhenti Berlangganan", "callback_data": "sub:unsubscribe"}])
+    keyboard.append([{"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}])
+    return {"inline_keyboard": keyboard}
 
 def get_jobs_menu_markup():
     return {
@@ -118,11 +151,31 @@ def get_agencies_menu_markup():
                 {"text": "🏨 Landbase Hotel (P3MI)", "callback_data": "list_agencies:landbase"}
             ],
             [
+                {"text": "📍 Cari Berdasarkan Lokasi", "callback_data": "menu_agencies_location"}
+            ],
+            [
                 {"text": "➕ Tambah Agency", "callback_data": "menu_add_agency"},
                 {"text": "❌ Hapus Agency", "callback_data": "menu_delete_agency_list"}
             ],
             [
                 {"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}
+            ]
+        ]
+    }
+
+def get_agencies_location_markup():
+    return {
+        "inline_keyboard": [
+            [
+                {"text": "📍 Jakarta", "callback_data": "list_agencies_loc:Jakarta"},
+                {"text": "📍 Bali", "callback_data": "list_agencies_loc:Bali"}
+            ],
+            [
+                {"text": "📍 Surabaya", "callback_data": "list_agencies_loc:Surabaya"},
+                {"text": "📍 Lainnya", "callback_data": "list_agencies_loc:Lainnya"}
+            ],
+            [
+                {"text": "🔙 Kembali", "callback_data": "menu_agencies"}
             ]
         ]
     }
@@ -205,6 +258,21 @@ def run_scrape_and_post(manual_trigger=False, user_chat_id=None):
             if success and success.get("ok"):
                 db_helper.mark_job_as_sent(job_id)
                 new_jobs_count += 1
+                
+                # Send private alerts to category subscribers
+                job_cat = categorize_job(job["position"])
+                if job_cat != "other":
+                    subs = db_helper.get_subscribers_by_category(job_cat)
+                    alert_msg = (
+                        f"🔔 <b>[ALERT LANGGANAN] Loker Baru Sesuai Departemen Anda!</b>\n\n"
+                        f"💼 <b>Posisi:</b> {scrapers.escape_html(job['position'])}\n"
+                        f"🏢 <b>Perusahaan:</b> {scrapers.escape_html(job['company'])}\n"
+                        f"💵 <b>Gaji:</b> {scrapers.escape_html(job['salary'])}\n"
+                        f"🔗 <a href='{job['link']}'>Detail &amp; Apply Loker</a>"
+                    )
+                    for sub_chat_id in subs:
+                        send_telegram_message(token, sub_chat_id, alert_msg)
+                        
                 time.sleep(1) # avoid hitting Telegram rate limits
                 
     db_helper.set_setting("last_run", current_time)
@@ -322,6 +390,21 @@ def scrape_step():
             if success and success.get("ok"):
                 db_helper.mark_job_as_sent(job_id)
                 new_jobs_from_source += 1
+                
+                # Send private alerts to category subscribers
+                job_cat = categorize_job(job["position"])
+                if job_cat != "other":
+                    subs = db_helper.get_subscribers_by_category(job_cat)
+                    alert_msg = (
+                        f"🔔 <b>[ALERT LANGGANAN] Loker Baru Sesuai Departemen Anda!</b>\n\n"
+                        f"💼 <b>Posisi:</b> {scrapers.escape_html(job['position'])}\n"
+                        f"🏢 <b>Perusahaan:</b> {scrapers.escape_html(job['company'])}\n"
+                        f"💵 <b>Gaji:</b> {scrapers.escape_html(job['salary'])}\n"
+                        f"🔗 <a href='{job['link']}'>Detail &amp; Apply Loker</a>"
+                    )
+                    for sub_chat_id in subs:
+                        send_telegram_message(token, sub_chat_id, alert_msg)
+                        
                 time.sleep(1)
                 
     # Update state
@@ -593,6 +676,120 @@ def webhook():
             agencies = db_helper.get_agencies()
             text_del = "❌ <b>Hapus Agency Dari Direktori</b>\n\nPilih agency di bawah ini yang ingin dihapus dari daftar bot:"
             edit_telegram_message(token, user_chat_id, message_id, text_del, get_delete_agencies_markup(agencies))
+            
+        elif callback_data == "menu_agencies_location":
+            answer_callback_query(token, callback_query_id)
+            edit_telegram_message(
+                token, 
+                user_chat_id, 
+                message_id, 
+                "📍 <b>Cari Agency Berdasarkan Wilayah Kantor</b>\n\nPilih wilayah lokasi kantor agency yang ingin Anda tampilkan:",
+                get_agencies_location_markup()
+            )
+            
+        elif callback_data.startswith("list_agencies_loc:"):
+            loc = callback_data.split(":")[-1]
+            answer_callback_query(token, callback_query_id)
+            
+            if loc == "Lainnya":
+                all_agencies = db_helper.get_agencies()
+                agencies = [a for a in all_agencies if "jakarta" not in a["address"].lower() and "bali" not in a["address"].lower() and "surabaya" not in a["address"].lower()]
+            else:
+                agencies = db_helper.get_agencies_by_location(loc)
+                
+            text = f"📍 <b>Daftar Agency Resmi di Wilayah: {loc}</b>\n\n"
+            text += "<i>Ketuk alamat/kontak untuk menyalin.</i>\n\n"
+            
+            if agencies:
+                for idx, ag in enumerate(agencies):
+                    text += f"{idx+1}. <b>{ag['name']}</b>\n"
+                    text += f"   📄 <b>Izin:</b> {ag['license_no']}\n"
+                    if ag['address']:
+                        text += f"   📍 <b>Alamat:</b> <code>{ag['address']}</code>\n"
+                    if ag['contact']:
+                        text += f"   📞 <b>Kontak:</b> <code>{ag['contact']}</code>\n"
+                    if ag['website']:
+                        text += f"   🌐 <b>Web:</b> <a href='{ag['website']}'>{ag['name']}</a>\n"
+                    text += "\n"
+            else:
+                text += "❌ Belum ada agency terdaftar di wilayah ini."
+                
+            markup = {
+                "inline_keyboard": [
+                    [{"text": "🔙 Kembali", "callback_data": "menu_agencies_location"}]
+                ]
+            }
+            edit_telegram_message(token, user_chat_id, message_id, text, markup)
+            
+        elif callback_data == "menu_subscribe":
+            answer_callback_query(token, callback_query_id)
+            current_sub = db_helper.get_user_subscription(user_chat_id)
+            
+            cat_titles = {
+                "deck": "🚢 Deck (Perwira & Rating)",
+                "engine": "🔧 Engine (Engineer & Rating)",
+                "galley": "🍽 Galley/Steward",
+                "landbase": "🏨 Hotel Darat Internasional"
+            }
+            
+            sub_title = cat_titles.get(current_sub, "Belum Berlangganan")
+            text = (
+                f"🔔 <b>Personal Job Alerts (Langganan Loker)</b>\n\n"
+                f"Dapatkan notifikasi pesan pribadi (japri) secara otomatis dari bot ketika ada lowongan baru sesuai minat jabatan Anda!\n\n"
+                f"Status Langganan Aktif: <b>{sub_title}</b>\n\n"
+                f"Silakan klik departemen di bawah ini untuk mengaktifkan atau mengganti langganan Anda:"
+            )
+            edit_telegram_message(token, user_chat_id, message_id, text, get_subscribe_markup(current_sub))
+            
+        elif callback_data.startswith("sub:"):
+            sub_action = callback_data.split(":")[-1]
+            if sub_action == "unsubscribe":
+                db_helper.unsubscribe_user(user_chat_id)
+                answer_callback_query(token, callback_query_id, "Berhasil berhenti berlangganan.")
+            else:
+                db_helper.subscribe_user(user_chat_id, sub_action)
+                cat_titles = {
+                    "deck": "Deck Department",
+                    "engine": "Engine Department",
+                    "galley": "Galley/Steward",
+                    "landbase": "Hotel Darat"
+                }
+                answer_callback_query(token, callback_query_id, f"Langganan aktif untuk {cat_titles[sub_action]}!")
+                
+            current_sub = db_helper.get_user_subscription(user_chat_id)
+            cat_titles = {
+                "deck": "🚢 Deck (Perwira & Rating)",
+                "engine": "🔧 Engine (Engineer & Rating)",
+                "galley": "🍽 Galley/Steward",
+                "landbase": "🏨 Hotel Darat Internasional"
+            }
+            sub_title = cat_titles.get(current_sub, "Belum Berlangganan")
+            text = (
+                f"🔔 <b>Personal Job Alerts (Langganan Loker)</b>\n\n"
+                f"Dapatkan notifikasi pesan pribadi (japri) secara otomatis dari bot ketika ada lowongan baru sesuai minat jabatan Anda!\n\n"
+                f"Status Langganan Aktif: <b>{sub_title}</b>\n\n"
+                f"Silakan klik departemen di bawah ini untuk mengaktifkan atau mengganti langganan Anda:"
+            )
+            edit_telegram_message(token, user_chat_id, message_id, text, get_subscribe_markup(current_sub))
+            
+        elif callback_data == "menu_share":
+            answer_callback_query(token, callback_query_id)
+            text_share = (
+                f"📢 <b>Bagikan Bot Lowongan Pelayaran</b>\n\n"
+                f"Bantu teman-teman pelaut dan pekerja hotel lainnya menemukan pekerjaan resmi dan aman dari agensi berizin Kemenhub & BP2MI!\n\n"
+                f"Klik tombol di bawah ini untuk membagikan bot langsung ke chat/grup Telegram teman Anda:"
+            )
+            
+            share_text = "Yuk cari loker pelaut & hotel internasional resmi P3MI/SIUPPAK di bot ini! Lengkap dengan cek direktori agensi resmi dan notifikasi langsung!"
+            share_url = f"https://t.me/share/url?url=https://t.me/jobpelayaran_bot&text={urllib.parse.quote(share_text)}"
+            
+            markup = {
+                "inline_keyboard": [
+                    [{"text": "📢 Bagikan ke Chat/Grup", "url": share_url}],
+                    [{"text": "🔙 Kembali", "callback_data": "menu_main"}]
+                ]
+            }
+            edit_telegram_message(token, user_chat_id, message_id, text_share, markup)
             
         elif callback_data == "menu_settings":
             answer_callback_query(token, callback_query_id)
