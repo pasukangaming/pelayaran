@@ -97,12 +97,29 @@ def get_main_menu_markup():
                 {"text": "🔔 Langganan Loker", "callback_data": "menu_subscribe"}
             ],
             [
+                {"text": "📄 Tips & Template CV", "callback_data": "menu_cv"},
+                {"text": "📊 Statistik Bot", "callback_data": "menu_stats"}
+            ],
+            [
                 {"text": "⚙️ Atur Interval", "callback_data": "menu_settings"},
                 {"text": "📋 Daftar Sumber", "callback_data": "menu_sources"}
             ],
             [
                 {"text": "🔄 Cek Loker Sekarang", "callback_data": "menu_scrape"},
                 {"text": "📢 Bagikan Bot", "callback_data": "menu_share"}
+            ]
+        ]
+    }
+
+def get_cv_menu_markup():
+    return {
+        "inline_keyboard": [
+            [
+                {"text": "🚢 Format Sea Service (Pelaut)", "callback_data": "cv_format:pelaut"},
+                {"text": "🏨 Format Resume (Hotel)", "callback_data": "cv_format:hotel"}
+            ],
+            [
+                {"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}
             ]
         ]
     }
@@ -790,6 +807,99 @@ def webhook():
                 ]
             }
             edit_telegram_message(token, user_chat_id, message_id, text_share, markup)
+        elif callback_data == "menu_cv":
+            answer_callback_query(token, callback_query_id)
+            text_cv = (
+                "📄 <b>Format CV & Resume Karir Internasional</b>\n\n"
+                "Pilih format CV di bawah ini untuk melihat struktur penulisan CV berstandar internasional yang disukai oleh agen kapal pesiar dan hotel luar negeri. "
+                "Anda bisa langsung menyalin teksnya untuk diisi:"
+            )
+            edit_telegram_message(token, user_chat_id, message_id, text_cv, get_cv_menu_markup())
+            
+        elif callback_data.startswith("cv_format:"):
+            cv_type = callback_data.split(":")[-1]
+            answer_callback_query(token, callback_query_id)
+            
+            if cv_type == "pelaut":
+                text = (
+                    "📄 <b>Format CV Sea Service Record (Masa Layar)</b>\n\n"
+                    "Ketuk kolom teks di bawah ini untuk langsung menyalin formatnya, lalu isi/edit sesuai pengalaman Anda:\n\n"
+                    "<code>===================================\n"
+                    "SEA SERVICE RECORD (Masa Layar)\n"
+                    "===================================\n"
+                    "1. Vessel Name    : [Nama Kapal]\n"
+                    "   Vessel Type    : [Jenis Kapal, misal: Container, Tanker, Cruise]\n"
+                    "   G.R.T.         : [Gross Tonnage, misal: 2500 GRT]\n"
+                    "   Engine Type    : [Tipe Mesin, misal: Wartsila 8L32]\n"
+                    "   B.H.P / K.W    : [Power Mesin, misal: 4000 BHP]\n"
+                    "   Rank/Position  : [Jabatan, misal: Third Engineer]\n"
+                    "   Sign-On Date   : [Tanggal Naik Kapal]\n"
+                    "   Sign-Off Date  : [Tanggal Turun Kapal]\n"
+                    "   Company/Owner  : [Nama Agency/Perusahaan]\n"
+                    "   Trading Area   : [Wilayah Pelayaran, misal: Worldwide]\n\n"
+                    "2. Vessel Name    : ...\n"
+                    "===================================</code>"
+                )
+            else:
+                text = (
+                    "📄 <b>Format Resume Perhotelan Darat / Internasional</b>\n\n"
+                    "Ketuk kolom teks di bawah ini untuk langsung menyalin formatnya, lalu isi/edit sesuai pengalaman Anda:\n\n"
+                    "<code>===================================\n"
+                    "WORK EXPERIENCE (Pengalaman Kerja)\n"
+                    "===================================\n"
+                    "1. Job Title      : [Jabatan, misal: Commis De Cuisine / Cook]\n"
+                    "   Company Name   : [Nama Hotel / Perusahaan]\n"
+                    "   Location       : [Kota, Negara, misal: Dubai, UAE]\n"
+                    "   Period         : [Bulan/Tahun Mulai - Selesai]\n"
+                    "   Responsibilities:\n"
+                    "   - [Deskripsi tugas 1]\n"
+                    "   - [Deskripsi tugas 2]\n"
+                    "   - [Deskripsi tugas 3]\n\n"
+                    "===================================\n"
+                    "EDUCATION & CERTIFICATIONS\n"
+                    "===================================\n"
+                    "1. School/Univ   : [Nama Sekolah/Universitas]\n"
+                    "   Degree/Major   : [Jurusan, misal: Hospitality]\n"
+                    "   Graduation Year: [Tahun Kelulusan]\n\n"
+                    "2. Certificate    : [Sertifikat Keahlian]\n"
+                    "===================================</code>"
+                )
+                
+            markup = {
+                "inline_keyboard": [
+                    [{"text": "🔙 Kembali", "callback_data": "menu_cv"}]
+                ]
+            }
+            edit_telegram_message(token, user_chat_id, message_id, text, markup)
+            
+        elif callback_data == "menu_stats":
+            answer_callback_query(token, callback_query_id)
+            stats = db_helper.get_stats()
+            
+            last_run = int(db_helper.get_setting("last_run", 0))
+            if last_run > 0:
+                local_time = time.strftime('%d-%m-%Y %H:%M:%S', time.localtime(last_run))
+            else:
+                local_time = "Belum pernah berjalan"
+                
+            interval = db_helper.get_setting("interval_hours", 1)
+            
+            text_stats = (
+                f"📊 <b>Statistik & Informasi Sistem Bot</b>\n\n"
+                f"• <b>Total Lowongan Kerja:</b> {stats['total_jobs']} loker\n"
+                f"• <b>Total Agensi Terdaftar:</b> {stats['total_agencies']} agensi\n"
+                f"• <b>Total Pelanggan Alert:</b> {stats['total_subscribers']} user\n\n"
+                f"⏱ <b>Interval Scraping:</b> {interval} Jam sekali\n"
+                f"🔄 <b>Terakhir Dipindai:</b> <code>{local_time}</code>\n\n"
+                f"<i>Sistem berjalan otomatis di server PythonAnywhere secara realtime.</i>"
+            )
+            
+            markup = {
+                "inline_keyboard": [
+                    [{"text": "🔙 Kembali", "callback_data": "menu_main"}]
+                ]
+            }
+            edit_telegram_message(token, user_chat_id, message_id, text_stats, markup)
             
         elif callback_data == "menu_settings":
             answer_callback_query(token, callback_query_id)

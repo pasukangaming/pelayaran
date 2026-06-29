@@ -430,3 +430,23 @@ def get_user_subscription(chat_id):
     if row:
         return row["category"]
     return None
+
+def get_stats():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*) FROM jobs")
+    total_jobs = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(*) FROM agencies")
+    total_agencies = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(*) FROM subscribers")
+    total_subscribers = cursor.fetchone()[0]
+    
+    conn.close()
+    return {
+        "total_jobs": total_jobs,
+        "total_agencies": total_agencies,
+        "total_subscribers": total_subscribers
+    }
