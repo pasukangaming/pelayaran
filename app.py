@@ -12,7 +12,10 @@ app = Flask(__name__)
 # Initialize database on startup
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+PROXY_URL = os.environ.get("GOOGLE_PROXY_URL")
 db_helper.init_db(default_token=BOT_TOKEN, default_chat_id=CHAT_ID)
+if PROXY_URL:
+    db_helper.set_setting("google_proxy_url", PROXY_URL)
 
 # Helper function to get config
 def get_bot_credentials():

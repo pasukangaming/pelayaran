@@ -2,27 +2,41 @@ import requests
 from bs4 import BeautifulSoup
 import urllib.parse
 import hashlib
+import db_helper
 
 def escape_html(text):
     if not text:
         return ""
     return str(text).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
-def scrape_crewell():
-    url = "https://crewell.net/en/vacancies/"
+def get_html_content(url):
+    proxy_url = db_helper.get_setting("google_proxy_url")
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
     }
-    
-    print("Scraping Crewell vacancies...")
     try:
-        response = requests.get(url, headers=headers, timeout=15)
+        if proxy_url:
+            print(f"Fetching via Google Apps Script Proxy: {url}")
+            target_url = f"{proxy_url}?url={urllib.parse.quote(url)}"
+            response = requests.get(target_url, timeout=25)
+        else:
+            print(f"Fetching directly: {url}")
+            response = requests.get(url, headers=headers, timeout=15)
+            
         response.raise_for_status()
+        return response.text
     except Exception as e:
-        print(f"Error scraping Crewell: {e}")
+        print(f"Error fetching {url}: {e}")
+        return None
+
+def scrape_crewell():
+    url = "https://crewell.net/en/vacancies/"
+    print("Scraping Crewell vacancies...")
+    html_text = get_html_content(url)
+    if not html_text:
         return []
         
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(html_text, 'html.parser')
     vacancy_items = soup.find_all(class_='vacancy-item')
     jobs = []
     
@@ -93,15 +107,14 @@ def scrape_crewell():
     return jobs
 
 def scrape_rss(url):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
-    }
     print(f"Scraping RSS feed: {url}")
+    html_text = get_html_content(url)
+    if not html_text:
+        return []
+        
     try:
-        response = requests.get(url, headers=headers, timeout=15)
-        response.raise_for_status()
         # Parse XML
-        soup = BeautifulSoup(response.text, 'xml')
+        soup = BeautifulSoup(html_text, 'xml')
         items = soup.find_all('item')
         
         # Fallback to Atom entries if no RSS items
@@ -150,15 +163,13 @@ def scrape_rss(url):
         return []
 
 def scrape_generic(url):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
-    }
     print(f"Scraping web page generically: {url}")
-    try:
-        response = requests.get(url, headers=headers, timeout=15)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
+    html_text = get_html_content(url)
+    if not html_text:
+        return []
         
+    try:
+        soup = BeautifulSoup(html_text, 'html.parser')
         links = soup.find_all('a')
         jobs = []
         seen_hrefs = set()
