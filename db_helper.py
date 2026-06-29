@@ -22,60 +22,20 @@ DEFAULT_AGENCIES = [
      "Menara Anugrah Lt. 24, Kantor Taman E.3.3, Jl. Mega Kuningan Lot 8.6-8.7, Jakarta Selatan", "+62 21 5794 8888 / info@equinox.co.id / IG: https://www.instagram.com/ebu.cruise/", "https://cruise.equinoxshipping.co.id/"),
     ("PT Equinox Cruise Jobs Portal", "SIUPPAK & P3MI", "Kapal Pesiar & Merchant", 
      "Menara Anugrah Lt. 24, Kantor Taman E.3.3, Jl. Mega Kuningan Lot 8.6-8.7, Jakarta Selatan", "+62 21 5794 8888 / info@equinox.co.id / IG: https://www.instagram.com/ebu.cruise/", "https://cruise.jobs.equinoxshipping.co.id/"),
-    ("PT Sumber Bakat Insani (SBI)", "SIUPPAK & P3MI", "Kapal Pesiar", 
-     "Menara Sudirman Lantai 16, Jl. Jend. Sudirman Kav. 60, Jakarta Pusat", "+62 21 522 7717 / recruitment@sbi.co.id / IG: https://www.instagram.com/sbi.recruitment/", "https://www.sbi.co.id/"),
-    ("PT Central Tiga Indonesia (CTI)", "SIUPPAK & P3MI", "Kapal Pesiar & Landbase", 
-     "Grand Wijaya Center Blok G No. 34-35, Jl. Wijaya II, Kebayoran Baru, Jakarta Selatan", "+62 21 723 1515 / cv@cti-usa.com / IG: https://www.instagram.com/ctigroupindonesia/", "http://www.ctigroup.co.id/"),
-    ("PT Meranti Magsaysay", "SIUPPAK & P3MI", "Kapal Pesiar & Cargo", 
-     "Gedung Meranti, Jl. Tanjung Karang No. 5, Menteng, Jakarta Pusat", "+62 21 390 8812 / crew@merantimagsaysay.co.id / IG: https://www.instagram.com/merantimagsaysay/", "http://www.merantimagsaysay.co.id/"),
-    ("PT Bali Paradise Citra Mandiri", "P3MI & SIUPPAK", "Kapal Pesiar & Landbase", 
-     "Jl. Kebo Iwa No. 99, Padangsambian Kaja, Denpasar Barat, Bali", "+62 361 413000 / info@baliparadisecitramandiri.co.id / IG: https://www.instagram.com/baliparadiseofficial/", "https://baliparadisecitramandiri.co.id/"),
-    ("PT BSM Crew Service Centre Indonesia", "SIUPPAK & P3MI", "Merchant & Cruise", 
-     "Menara Standard Chartered Lt. 29, Jl. Prof. Dr. Satrio No. 164, Jakarta Selatan", "+62 21 251 2222 / csc.id@schultegroup.com", "https://www.bs-shipmanagement.com/"),
-    ("PT Sentina Karya Utama", "P3MI", "Landbase & Cruise", 
-     "Jl. Raya Mulyosari No. 132, Surabaya", "+62 31 592 1234 / info@sentinakarya.co.id", "https://www.sentinakarya.co.id/"),
-    ("PT Horizon Karir Internasional", "P3MI", "Landbase & Cruise", 
-     "Ruko Segitiga Emas Blok A-8, Jl. Bypass Ngurah Rai, Kuta, Bali", "+62 361 765432 / recruitment@horizonkarir.com", "https://www.horizonkarir.com/"),
-    ("PT Bali Nusa Sentosa", "P3MI", "Landbase & Cruise", 
-     "Jl. Bypass Ngurah Rai No. 100X, Tuban, Kuta, Bali", "+62 361 751111 / info@balinusasentosa.com", "http://balinusasentosa.com/"),
-    ("PT Duta Wibawa Manggala (DWM)", "SIUPPAK & P3MI", "Kapal Pesiar & Merchant", 
-     "Ruko Golden Madrid I Blok D No. 23, BSD City, Tangerang Selatan", "+62 21 5316 0451 / dwm@dwm.co.id", "https://www.dwm.co.id/"),
-    ("PT Piramida Crewing Agency", "SIUPPAK & P3MI", "Merchant & Cruise", 
-         "Jl. Boulevard Barat Raya Blok LC-7 No. 23, Kelapa Gading, Jakarta Utara", "+62 21 4585 1234 / recruitment@piramidacrew.com", ""),
-    ("PT Elite International Recruitment", "P3MI", "Landbase (Hotel Darat)", 
-         "Sudirman Plaza, Plaza Marein Lt. 17, Jl. Jend. Sudirman Kav. 76-78, Jakarta Selatan", "+62 21 5793 1234 / info@elitekarir.com", ""),
-    ("PT Bidar Timur", "P3MI", "Landbase (Hotel Darat)", 
-         "Jl. Jend. A. Yani No. 10, Utan Kayu Utara, Matraman, Jakarta Timur", "+62 21 8591 1111 / info@bidartimur.co.id", "http://www.bidartimur.co.id/"),
-    ("PT Timuraya Jaya Lestari", "P3MI", "Landbase (Hotel Darat)", 
-         "Rukan Puri Mutiara Blok A No. 107, Jl. Griya Utama, Sunter Agung, Jakarta Utara", "+62 21 6583 4567 / recruitment@timurayajayalestari.co.id", "http://www.timurayajayalestari.co.id/"),
-    ("PT Sahara Fajar Semesta", "P3MI", "Landbase (Hotel Darat)", 
-         "Jl. Raden Saleh No. 45, Cikini, Jakarta Pusat", "+62 21 3192 1234 / info@saharafajar.com", ""),
-    ("PT Amri Margatama", "P3MI", "Landbase (Hotel Darat)", 
-         "Jl. Tebet Barat Dalam Raya No. 34, Jakarta Selatan", "+62 21 8370 1234 / info@amrimargatama.co.id", "http://www.amrimargatama.co.id/"),
-    ("PT Jasatama Lestari Abadi", "P3MI", "Landbase (Hotel Darat)", 
-         "Jl. Danau Toba No. 12, Bendungan Hilir, Jakarta Pusat", "+62 21 570 1234 / recruitment@jasatamalestari.com", ""),
-    ("PT Monaco Crew Service", "SIUPPAK & P3MI", "Kapal Pesiar & Merchant", 
-         "Jl. Gatot Subroto No. 50, Denpasar, Bali", "+62 361 234567 / info@monacocrewing.com", ""),
-    ("PT Gasindo Marine Indonesia", "SIUPPAK & P3MI", "Merchant & Cruise", 
-         "Rukan Artha Gading Niaga Blok C No. 20, Kelapa Gading, Jakarta Utara", "+62 21 4585 7777 / crew@gasindomarine.com", ""),
-    ("PT Core Maritime Services (CCS)", "SIUPPAK & P3MI", "Kapal Pesiar & Cargo", 
-         "Ruko Inkopal Blok B No. 12, Jl. Boulevard Barat, Kelapa Gading, Jakarta Utara", "+62 21 4585 1111 / info@corecrewing.com", ""),
-    ("PT Bintang Mandiri Internasional", "P3MI", "Landbase (Hotel Darat)", 
-         "Jl. Margonda Raya No. 123, Depok", "+62 21 7721 1234 / info@bintangmandiri.com", ""),
-    ("PT Eka Widya Nusantara", "P3MI", "Landbase (Hotel Darat)", 
-         "Jl. Jend. Sudirman No. 89, Pekanbaru", "+62 761 12345 / info@ekawidya.com", ""),
-    ("PT Indo Semesta Lestari", "P3MI", "Landbase (Hotel Darat)", 
-         "Jl. Letjen S. Parman Kav. 21, Slipi, Jakarta Barat", "+62 21 530 1234 / recruitment@indosemesta.co.id", ""),
     ("Cast-A-Way Cruise Recruiting (Hospitality)", "Official International Agency", "Kapal Pesiar & Hospitality", 
-         "International Recruiting Office", "info@cast-a-way.com / IG: https://www.instagram.com/castawayindonesia/", "https://cast-a-way.com/hospitality/"),
+     "International Recruiting Office", "info@cast-a-way.com / IG: https://www.instagram.com/castawayindonesia/", "https://cast-a-way.com/hospitality/"),
     ("Cast-A-Way Cruise Recruiting (F&B)", "Official International Agency", "Kapal Pesiar & Hospitality", 
-         "International Recruiting Office", "info@cast-a-way.com / IG: https://www.instagram.com/castawayindonesia/", "https://cast-a-way.com/fb-operations/"),
+     "International Recruiting Office", "info@cast-a-way.com / IG: https://www.instagram.com/castawayindonesia/", "https://cast-a-way.com/fb-operations/"),
     ("Cast-A-Way Cruise Recruiting (Spa)", "Official International Agency", "Kapal Pesiar & Hospitality", 
-         "International Recruiting Office", "info@cast-a-way.com / IG: https://www.instagram.com/castawayindonesia/", "https://cast-a-way.com/spa/"),
+     "International Recruiting Office", "info@cast-a-way.com / IG: https://www.instagram.com/castawayindonesia/", "https://cast-a-way.com/spa/"),
     ("PT Marine Pride Service (MPS)", "SIUPPAK & P3MI", "Kapal Pesiar & Merchant", 
-         "Ruko Gading Kirana, Jl. Kirana Avenue No. 23, Kelapa Gading, Jakarta Utara", "info@mpsjakarta.com / IG: https://www.instagram.com/mpsjakarta/", "https://www.mpsjakarta.com/"),
+     "Ruko Gading Kirana, Jl. Kirana Avenue No. 23, Kelapa Gading, Jakarta Utara", "info@mpsjakarta.com / IG: https://www.instagram.com/mpsjakarta/", "https://www.mpsjakarta.com/"),
     ("PT Marine Pride Service (MPS) Career", "SIUPPAK & P3MI", "Kapal Pesiar & Merchant", 
-         "Ruko Gading Kirana, Jl. Kirana Avenue No. 23, Kelapa Gading, Jakarta Utara", "info@mpsjakarta.com / IG: https://www.instagram.com/mpsjakarta/", "https://www.mpsjakarta.com/apply-now/candidate")
+     "Ruko Gading Kirana, Jl. Kirana Avenue No. 23, Kelapa Gading, Jakarta Utara", "info@mpsjakarta.com / IG: https://www.instagram.com/mpsjakarta/", "https://www.mpsjakarta.com/apply-now/candidate"),
+    ("PT Kuantum Marina Global Web", "SIUPPAK & P3MI", "Kapal Pesiar & Merchant", 
+     "Gedung K-Marina Global, Jakarta", "recruitment@k-marinaglobal.com / IG: https://www.instagram.com/kuantummarinaglobal_official/", "https://k-marinaglobal.com/"),
+    ("PT Kuantum Marina Global Career", "SIUPPAK & P3MI", "Kapal Pesiar & Merchant", 
+     "Gedung K-Marina Global, Jakarta", "recruitment@k-marinaglobal.com / IG: https://www.instagram.com/kuantummarinaglobal_official/", "https://k-marinaglobal.com/career/")
 ]
 
 def get_db_connection():
@@ -501,12 +461,11 @@ def sync_default_agencies():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT COUNT(*) FROM agencies")
-    before = cursor.fetchone()[0]
+    cursor.execute("DELETE FROM agencies")
     
     for name, lic, a_type, addr, cont, web in DEFAULT_AGENCIES:
         cursor.execute("""
-            INSERT OR IGNORE INTO agencies (name, license_no, type, address, contact, website, created_at) 
+            INSERT INTO agencies (name, license_no, type, address, contact, website, created_at) 
             VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
         """, (name, lic, a_type, addr, cont, web))
         
@@ -516,7 +475,7 @@ def sync_default_agencies():
     after = cursor.fetchone()[0]
     
     conn.close()
-    return after - before
+    return after
 
 def clear_all_jobs():
     conn = get_db_connection()

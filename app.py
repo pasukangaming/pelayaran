@@ -823,8 +823,8 @@ def webhook():
             
             text_res = (
                 f"🔄 <b>Sinkronisasi Otomatis Selesai!</b>\n\n"
-                f"Database bot telah diselaraskan dengan daftar agensi resmi berizin aktif di Kemenhub & BP2MI.\n\n"
-                f"• Agensi baru berhasil ditambahkan: <b>{added_count} agensi</b>\n\n"
+                f"Database bot telah diselaraskan dengan daftar 7 agensi resmi berizin aktif di Kemenhub & BP2MI.\n\n"
+                f"• Total agensi aktif di database: <b>{added_count} agensi</b>\n\n"
                 f"<i>Semua agensi resmi kini aktif dan siap di-scrape!</i>"
             )
             
