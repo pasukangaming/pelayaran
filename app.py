@@ -996,6 +996,19 @@ def webhook():
             
     return jsonify({"status": "ok"})
 
+@app.route("/debug-log")
+def debug_log():
+    log_path = "/var/log/amanputradewa.pythonanywhere.com.error.log"
+    if not os.path.exists(log_path):
+        return jsonify({"error": f"Log file not found at {log_path}"})
+    try:
+        with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+            lines = f.readlines()
+            last_lines = lines[-100:]
+            return "<pre>" + "".join(last_lines) + "</pre>"
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
