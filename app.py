@@ -1,6 +1,7 @@
 import os
 import time
 import requests
+import threading
 from flask import Flask, request, jsonify
 from bs4 import BeautifulSoup
 
@@ -178,8 +179,8 @@ def home():
 
 @app.route("/run-cron", methods=["GET", "POST"])
 def run_cron():
-    success, message = run_scrape_and_post(manual_trigger=False)
-    return jsonify({"success": success, "message": message})
+    threading.Thread(target=run_scrape_and_post, args=(False,)).start()
+    return jsonify({"success": True, "message": "Scraping task started in background."})
 
 @app.route("/test-telegram")
 def test_telegram():
@@ -354,13 +355,14 @@ def webhook():
             
         elif callback_data == "menu_scrape":
             answer_callback_query(token, callback_query_id, "Scraping dimulai...")
-            edit_telegram_message(token, user_chat_id, message_id, "🔄 <b>Sedang memeriksa lowongan terbaru...</b>\n\nMohon tunggu beberapa detik...")
-            
-            success, msg = run_scrape_and_post(manual_trigger=True)
-            
-            # Show result
-            result_text = f"✅ <b>Scraping Selesai!</b>\n\nHasil: {msg}\n\nKembali ke Menu Utama:"
-            edit_telegram_message(token, user_chat_id, message_id, result_text, get_main_menu_markup())
+            edit_telegram_message(
+                token, 
+                user_chat_id, 
+                message_id, 
+                "🔄 <b>Pemeriksaan loker dimulai!</b>\n\nProses ini berjalan di latar belakang karena memindai lebih dari 50 sumber bawaan secara bersamaan. Loker baru akan terkirim langsung ke channel Anda dalam beberapa menit.",
+                get_main_menu_markup()
+            )
+            threading.Thread(target=run_scrape_and_post, args=(True,)).start()
             
     return jsonify({"status": "ok"})
 
