@@ -40,8 +40,43 @@ def categorize_job(position):
     elif any(kw in pos_lower for kw in landbase_kws):
         return "landbase"
     return "other"
+def call_telegram_api(method, payload):
+    token = get_bot_credentials()[0]
+    if not token:
+        return None
+        
+    proxy_url = db_helper.get_setting("google_proxy_url")
+    base_url = f"https://api.telegram.org/bot{token}/{method}"
+    
+    query_params = {}
+    for k, v in payload.items():
+        if isinstance(v, (dict, list)):
+            query_params[k] = json.dumps(v)
+        else:
+            query_params[k] = str(v)
+            
+    url_parts = list(urllib.parse.urlparse(base_url))
+    url_parts[4] = urllib.parse.urlencode(query_params)
+    telegram_url = urllib.parse.urlunparse(url_parts)
+    
+    if proxy_url:
+        target_url = f"{proxy_url}?url={urllib.parse.quote(telegram_url)}"
+    else:
+        target_url = telegram_url
+        
+    try:
+        response = requests.get(target_url, timeout=5.0)
+        return response.json()
+    except Exception as e:
+        print(f"Error calling Telegram API ({method}) via proxy: {e}")
+        try:
+            fallback_response = requests.post(base_url, json=payload, timeout=2.0)
+            return fallback_response.json()
+        except Exception as fe:
+            print(f"Fallback direct call failed: {fe}")
+            return None
+
 def send_telegram_message(token, chat_id, text, reply_markup=None):
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {
         "chat_id": chat_id,
         "text": text,
@@ -50,15 +85,9 @@ def send_telegram_message(token, chat_id, text, reply_markup=None):
     }
     if reply_markup:
         payload["reply_markup"] = reply_markup
-    try:
-        response = requests.post(url, json=payload, timeout=10)
-        return response.json()
-    except Exception as e:
-        print(f"Error sending message: {e}")
-        return None
+    return call_telegram_api("sendMessage", payload)
 
 def edit_telegram_message(token, chat_id, message_id, text, reply_markup=None):
-    url = f"https://api.telegram.org/bot{token}/editMessageText"
     payload = {
         "chat_id": chat_id,
         "message_id": message_id,
@@ -68,22 +97,15 @@ def edit_telegram_message(token, chat_id, message_id, text, reply_markup=None):
     }
     if reply_markup:
         payload["reply_markup"] = reply_markup
-    try:
-        response = requests.post(url, json=payload, timeout=10)
-        return response.json()
-    except Exception as e:
-        print(f"Error editing message: {e}")
-        return None
+    return call_telegram_api("editMessageText", payload)
 
 def answer_callback_query(token, callback_query_id, text=None):
-    url = f"https://api.telegram.org/bot{token}/answerCallbackQuery"
-    payload = {"callback_query_id": callback_query_id}
+    payload = {
+        "callback_query_id": callback_query_id
+    }
     if text:
         payload["text"] = text
-    try:
-        requests.post(url, json=payload, timeout=5)
-    except Exception as e:
-        print(f"Error answering callback query: {e}")
+    return call_telegram_api("answerCallbackQuery", payload)
 
 # Menu Markups
 def get_main_menu_markup():
