@@ -178,6 +178,42 @@ def run_cron():
     success, message = run_scrape_and_post(manual_trigger=False)
     return jsonify({"success": success, "message": message})
 
+@app.route("/test-telegram")
+def test_telegram():
+    token = db_helper.get_setting("telegram_bot_token")
+    if not token:
+        return jsonify({"status": "error", "message": "No token configured"})
+    
+    # Try official with default connection
+    official_default = "error"
+    try:
+        r = requests.get(f"https://api.telegram.org/bot{token}/getMe", timeout=3)
+        official_default = f"success: {r.status_code}"
+    except Exception as e:
+        official_default = str(e)[:100]
+        
+    # Try forcing IPv4
+    official_ipv4 = "error"
+    try:
+        import urllib3.util.connection as urllib3_cn
+        import socket
+        
+        # Patch to force IPv4
+        original_gai = urllib3_cn.allowed_gai_family
+        urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
+        
+        r = requests.get(f"https://api.telegram.org/bot{token}/getMe", timeout=3)
+        official_ipv4 = f"success: {r.status_code}"
+        
+        # Restore original
+        urllib3_cn.allowed_gai_family = original_gai
+    except Exception as e:
+        official_ipv4 = str(e)[:100]
+        
+    return jsonify({
+        "official_default": official_default,
+        "official_ipv4_forced": official_ipv4
+    })
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
