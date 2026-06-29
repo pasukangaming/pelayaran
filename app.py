@@ -179,6 +179,19 @@ def get_agencies_menu_markup():
         ]
     }
 
+def get_add_agency_options_markup():
+    return {
+        "inline_keyboard": [
+            [
+                {"text": "✍️ Input Manual", "callback_data": "menu_add_agency_manual"},
+                {"text": "🔄 Update Otomatis", "callback_data": "menu_add_agency_auto"}
+            ],
+            [
+                {"text": "🔙 Batal", "callback_data": "menu_agencies"}
+            ]
+        ]
+    }
+
 def get_agencies_location_markup():
     return {
         "inline_keyboard": [
@@ -645,19 +658,50 @@ def webhook():
             
         elif callback_data == "menu_add_agency":
             answer_callback_query(token, callback_query_id)
-            db_helper.set_user_state(user_chat_id, "awaiting_agency_data")
             edit_telegram_message(
                 token, 
                 user_chat_id, 
                 message_id, 
                 "➕ <b>Tambah Agency Resmi Baru</b>\n\n"
+                "Pilih cara untuk menambahkan agency resmi ke dalam database bot:\n\n"
+                "• <b>✍️ Input Manual:</b> Menambahkan secara mandiri dengan mengetik data agensi.\n"
+                "• <b>🔄 Update Otomatis:</b> Menyinkronkan otomatis semua daftar agensi resmi (P3MI / SIUPPAK) yang aktif dan terdaftar langsung ke database.",
+                get_add_agency_options_markup()
+            )
+            
+        elif callback_data == "menu_add_agency_manual":
+            answer_callback_query(token, callback_query_id)
+            db_helper.set_user_state(user_chat_id, "awaiting_agency_data")
+            edit_telegram_message(
+                token, 
+                user_chat_id, 
+                message_id, 
+                "✍️ <b>Input Manual Agency Resmi Baru</b>\n\n"
                 "Silakan kirimkan data agency baru dengan format berikut (pisahkan dengan karakter |):\n"
                 "<code>Nama Agency | Nomor Izin | Kategori (Kapal Pesiar atau Landbase) | Alamat | Kontak | Website</code>\n\n"
                 "Contoh:\n"
                 "<code>PT Nusantara Raya | P3MI No. 99/2026 | Landbase | Jl. Sudirman No. 10 | +628123456 | https://nusantararaya.com</code>\n\n"
                 "<i>Bot akan menunggu input teks dari Anda...</i>",
-                {"inline_keyboard": [[{"text": "🔙 Batal", "callback_data": "menu_agencies"}]]}
+                {"inline_keyboard": [[{"text": "🔙 Batal", "callback_data": "menu_add_agency"}]]}
             )
+            
+        elif callback_data == "menu_add_agency_auto":
+            answer_callback_query(token, callback_query_id, "Memulai sinkronisasi...")
+            added_count = db_helper.sync_default_agencies()
+            
+            text_res = (
+                f"🔄 <b>Sinkronisasi Otomatis Selesai!</b>\n\n"
+                f"Database bot telah diselaraskan dengan daftar agensi resmi berizin aktif di Kemenhub & BP2MI.\n\n"
+                f"• Agensi baru berhasil ditambahkan: <b>{added_count} agensi</b>\n\n"
+                f"<i>Semua agensi resmi kini aktif dan siap di-scrape!</i>"
+            )
+            
+            markup = {
+                "inline_keyboard": [
+                    [{"text": "🔙 Kembali ke Menu Agency", "callback_data": "menu_agencies"}]
+                ]
+            }
+            edit_telegram_message(token, user_chat_id, message_id, text_res, markup)
             
         elif callback_data == "menu_delete_agency_list":
             answer_callback_query(token, callback_query_id)

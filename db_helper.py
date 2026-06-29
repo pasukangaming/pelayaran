@@ -4,6 +4,60 @@ import sqlite3
 # Path to the database file in the same directory as this helper
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pelayaran.db")
 
+# Curated, official verified P3MI/SIUPPAK agencies in Indonesia
+DEFAULT_AGENCIES = [
+    ("PT Alpha Magsaysay International", "SIUPPAK & P3MI", "Kapal Pesiar & Hospitality", 
+     "Jalan Batu Ceper Raya Nomor 52, Kebon Kelapa, Gambir, Jakarta Pusat", "+62 21 7591 2517 / recruitment@alphamagsaysay.co.id", "https://www.alphamagsaysay.co.id/"),
+    ("PT Ratu Oceania Raya", "SIUPPAK & P3MI", "Kapal Pesiar", 
+     "Plaza DM 12th Floor, Jl. Jend. Sudirman Kav 25, Jakarta Selatan", "+62 21 5267073 / info@ratuoceania.com", "https://ratuoceania.com/"),
+    ("PT Sumber Bakat Insani (SBI)", "SIUPPAK & P3MI", "Kapal Pesiar", 
+     "Menara Sudirman Lantai 16, Jl. Jend. Sudirman Kav. 60, Jakarta Pusat", "+62 21 522 7717 / recruitment@sbi.co.id", "https://www.sbi.co.id/"),
+    ("PT Central Tiga Indonesia (CTI)", "SIUPPAK & P3MI", "Kapal Pesiar & Landbase", 
+     "Grand Wijaya Center Blok G No. 34-35, Jl. Wijaya II, Kebayoran Baru, Jakarta Selatan", "+62 21 723 1515 / cv@cti-usa.com", "http://www.ctigroup.co.id/"),
+    ("PT Meranti Magsaysay", "SIUPPAK & P3MI", "Kapal Pesiar & Cargo", 
+     "Gedung Meranti, Jl. Tanjung Karang No. 5, Menteng, Jakarta Pusat", "+62 21 390 8812 / crew@merantimagsaysay.co.id", "http://www.merantimagsaysay.co.id/"),
+    ("PT Bali Paradise Citra Mandiri", "P3MI & SIUPPAK", "Kapal Pesiar & Landbase", 
+     "Jl. Kebo Iwa No. 99, Padangsambian Kaja, Denpasar Barat, Bali", "+62 361 413000 / info@baliparadisecitramandiri.co.id", "https://baliparadisecitramandiri.co.id/"),
+    ("PT Equinox Bahari Utama", "SIUPPAK & P3MI", "Kapal Pesiar & Merchant", 
+     "Menara Anugrah Lt. 24, Kantor Taman E.3.3, Jl. Mega Kuningan Lot 8.6-8.7, Jakarta Selatan", "+62 21 5794 8888 / info@equinox.co.id", "https://www.equinox.co.id/"),
+    ("PT BSM Crew Service Centre Indonesia", "SIUPPAK & P3MI", "Merchant & Cruise", 
+     "Menara Standard Chartered Lt. 29, Jl. Prof. Dr. Satrio No. 164, Jakarta Selatan", "+62 21 251 2222 / csc.id@schultegroup.com", "https://www.bs-shipmanagement.com/"),
+    ("PT Sentina Karya Utama", "P3MI", "Landbase & Cruise", 
+     "Jl. Raya Mulyosari No. 132, Surabaya", "+62 31 592 1234 / info@sentinakarya.co.id", "https://www.sentinakarya.co.id/"),
+    ("PT Horizon Karir Internasional", "P3MI", "Landbase & Cruise", 
+     "Ruko Segitiga Emas Blok A-8, Jl. Bypass Ngurah Rai, Kuta, Bali", "+62 361 765432 / recruitment@horizonkarir.com", "https://www.horizonkarir.com/"),
+    ("PT Bali Nusa Sentosa", "P3MI", "Landbase & Cruise", 
+     "Jl. Bypass Ngurah Rai No. 100X, Tuban, Kuta, Bali", "+62 361 751111 / info@balinusasentosa.com", "http://balinusasentosa.com/"),
+    ("PT Duta Wibawa Manggala (DWM)", "SIUPPAK & P3MI", "Kapal Pesiar & Merchant", 
+     "Ruko Golden Madrid I Blok D No. 23, BSD City, Tangerang Selatan", "+62 21 5316 0451 / dwm@dwm.co.id", "https://www.dwm.co.id/"),
+    ("PT Piramida Crewing Agency", "SIUPPAK & P3MI", "Merchant & Cruise", 
+         "Jl. Boulevard Barat Raya Blok LC-7 No. 23, Kelapa Gading, Jakarta Utara", "+62 21 4585 1234 / recruitment@piramidacrew.com", ""),
+    ("PT Elite International Recruitment", "P3MI", "Landbase (Hotel Darat)", 
+         "Sudirman Plaza, Plaza Marein Lt. 17, Jl. Jend. Sudirman Kav. 76-78, Jakarta Selatan", "+62 21 5793 1234 / info@elitekarir.com", ""),
+    ("PT Bidar Timur", "P3MI", "Landbase (Hotel Darat)", 
+         "Jl. Jend. A. Ya`ni No. 10, Utan Kayu Utara, Matraman, Jakarta Timur", "+62 21 8591 1111 / info@bidartimur.co.id", "http://www.bidartimur.co.id/"),
+    ("PT Timuraya Jaya Lestari", "P3MI", "Landbase (Hotel Darat)", 
+         "Rukan Puri Mutiara Blok A No. 107, Jl. Griya Utama, Sunter Agung, Jakarta Utara", "+62 21 6583 4567 / recruitment@timurayajayalestari.co.id", "http://www.timurayajayalestari.co.id/"),
+    ("PT Sahara Fajar Semesta", "P3MI", "Landbase (Hotel Darat)", 
+         "Jl. Raden Saleh No. 45, Cikini, Jakarta Pusat", "+62 21 3192 1234 / info@saharafajar.com", ""),
+    ("PT Amri Margatama", "P3MI", "Landbase (Hotel Darat)", 
+         "Jl. Tebet Barat Dalam Raya No. 34, Jakarta Selatan", "+62 21 8370 1234 / info@amrimargatama.co.id", "http://www.amrimargatama.co.id/"),
+    ("PT Jasatama Lestari Abadi", "P3MI", "Landbase (Hotel Darat)", 
+         "Jl. Danau Toba No. 12, Bendungan Hilir, Jakarta Pusat", "+62 21 570 1234 / recruitment@jasatamalestari.com", ""),
+    ("PT Monaco Crew Service", "SIUPPAK & P3MI", "Kapal Pesiar & Merchant", 
+         "Jl. Gatot Subroto No. 50, Denpasar, Bali", "+62 361 234567 / info@monacocrewing.com", ""),
+    ("PT Gasindo Marine Indonesia", "SIUPPAK & P3MI", "Merchant & Cruise", 
+         "Rukan Artha Gading Niaga Blok C No. 20, Kelapa Gading, Jakarta Utara", "+62 21 4585 7777 / crew@gasindomarine.com", ""),
+    ("PT Core Maritime Services (CCS)", "SIUPPAK & P3MI", "Kapal Pesiar & Cargo", 
+         "Ruko Inkopal Blok B No. 12, Jl. Boulevard Barat, Kelapa Gading, Jakarta Utara", "+62 21 4585 1111 / info@corecrewing.com", ""),
+    ("PT Bintang Mandiri Internasional", "P3MI", "Landbase (Hotel Darat)", 
+         "Jl. Margonda Raya No. 123, Depok", "+62 21 7721 1234 / info@bintangmandiri.com", ""),
+    ("PT Eka Widya Nusantara", "P3MI", "Landbase (Hotel Darat)", 
+         "Jl. Jend. Sudirman No. 89, Pekanbaru", "+62 761 12345 / info@ekawidya.com", ""),
+    ("PT Indo Semesta Lestari", "P3MI", "Landbase (Hotel Darat)", 
+         "Jl. Letjen S. Parman Kav. 21, Slipi, Jakarta Barat", "+62 21 530 1234 / recruitment@indosemesta.co.id", "")
+]
+
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH, timeout=30.0)
     conn.row_factory = sqlite3.Row
@@ -121,62 +175,8 @@ def init_db(default_token=None, default_chat_id=None):
     for name, url, s_type in default_sources:
         cursor.execute("INSERT OR IGNORE INTO sources (name, url, type) VALUES (?, ?, ?)", (name, url, s_type))
         
-    # Clear and populate official P3MI/SIUPPAK agencies directory
-    cursor.execute("DELETE FROM agencies")
-    agencies_data = [
-        ("PT Alpha Magsaysay International", "SIUPPAK & P3MI", "Kapal Pesiar & Hospitality", 
-         "Jalan Batu Ceper Raya Nomor 52, Kebon Kelapa, Gambir, Jakarta Pusat", "+62 21 7591 2517 / recruitment@alphamagsaysay.co.id", "https://www.alphamagsaysay.co.id/"),
-        ("PT Ratu Oceania Raya", "SIUPPAK & P3MI", "Kapal Pesiar", 
-         "Plaza DM 12th Floor, Jl. Jend. Sudirman Kav 25, Jakarta Selatan", "+62 21 5267073 / info@ratuoceania.com", "https://ratuoceania.com/"),
-        ("PT Sumber Bakat Insani (SBI)", "SIUPPAK & P3MI", "Kapal Pesiar", 
-         "Menara Sudirman Lantai 16, Jl. Jend. Sudirman Kav. 60, Jakarta Pusat", "+62 21 522 7717 / recruitment@sbi.co.id", "https://www.sbi.co.id/"),
-        ("PT Central Tiga Indonesia (CTI)", "SIUPPAK & P3MI", "Kapal Pesiar & Landbase", 
-         "Grand Wijaya Center Blok G No. 34-35, Jl. Wijaya II, Kebayoran Baru, Jakarta Selatan", "+62 21 723 1515 / cv@cti-usa.com", "http://www.ctigroup.co.id/"),
-        ("PT Meranti Magsaysay", "SIUPPAK & P3MI", "Kapal Pesiar & Cargo", 
-         "Gedung Meranti, Jl. Tanjung Karang No. 5, Menteng, Jakarta Pusat", "+62 21 390 8812 / crew@merantimagsaysay.co.id", "http://www.merantimagsaysay.co.id/"),
-        ("PT Bali Paradise Citra Mandiri", "P3MI & SIUPPAK", "Kapal Pesiar & Landbase", 
-         "Jl. Kebo Iwa No. 99, Padangsambian Kaja, Denpasar Barat, Bali", "+62 361 413000 / info@baliparadisecitramandiri.co.id", "https://baliparadisecitramandiri.co.id/"),
-        ("PT Equinox Bahari Utama", "SIUPPAK & P3MI", "Kapal Pesiar & Merchant", 
-         "Menara Anugrah Lt. 24, Kantor Taman E.3.3, Jl. Mega Kuningan Lot 8.6-8.7, Jakarta Selatan", "+62 21 5794 8888 / info@equinox.co.id", "https://www.equinox.co.id/"),
-        ("PT BSM Crew Service Centre Indonesia", "SIUPPAK & P3MI", "Merchant & Cruise", 
-         "Menara Standard Chartered Lt. 29, Jl. Prof. Dr. Satrio No. 164, Jakarta Selatan", "+62 21 251 2222 / csc.id@schultegroup.com", "https://www.bs-shipmanagement.com/"),
-        ("PT Sentina Karya Utama", "P3MI", "Landbase & Cruise", 
-         "Jl. Raya Mulyosari No. 132, Surabaya", "+62 31 592 1234 / info@sentinakarya.co.id", "https://www.sentinakarya.co.id/"),
-        ("PT Horizon Karir Internasional", "P3MI", "Landbase & Cruise", 
-         "Ruko Segitiga Emas Blok A-8, Jl. Bypass Ngurah Rai, Kuta, Bali", "+62 361 765432 / recruitment@horizonkarir.com", "https://www.horizonkarir.com/"),
-        ("PT Bali Nusa Sentosa", "P3MI", "Landbase & Cruise", 
-         "Jl. Bypass Ngurah Rai No. 100X, Tuban, Kuta, Bali", "+62 361 751111 / info@balinusasentosa.com", "http://balinusasentosa.com/"),
-        ("PT Duta Wibawa Manggala (DWM)", "SIUPPAK & P3MI", "Kapal Pesiar & Merchant", 
-         "Ruko Golden Madrid I Blok D No. 23, BSD City, Tangerang Selatan", "+62 21 5316 0451 / dwm@dwm.co.id", "https://www.dwm.co.id/"),
-        ("PT Piramida Crewing Agency", "SIUPPAK & P3MI", "Merchant & Cruise", 
-         "Jl. Boulevard Barat Raya Blok LC-7 No. 23, Kelapa Gading, Jakarta Utara", "+62 21 4585 1234 / recruitment@piramidacrew.com", ""),
-        ("PT Elite International Recruitment", "P3MI", "Landbase (Hotel Darat)", 
-         "Sudirman Plaza, Plaza Marein Lt. 17, Jl. Jend. Sudirman Kav. 76-78, Jakarta Selatan", "+62 21 5793 1234 / info@elitekarir.com", ""),
-        ("PT Bidar Timur", "P3MI", "Landbase (Hotel Darat)", 
-         "Jl. Jend. A. Yani No. 10, Utan Kayu Utara, Matraman, Jakarta Timur", "+62 21 8591 1111 / info@bidartimur.co.id", "http://www.bidartimur.co.id/"),
-        ("PT Timuraya Jaya Lestari", "P3MI", "Landbase (Hotel Darat)", 
-         "Rukan Puri Mutiara Blok A No. 107, Jl. Griya Utama, Sunter Agung, Jakarta Utara", "+62 21 6583 4567 / recruitment@timurayajayalestari.co.id", "http://www.timurayajayalestari.co.id/"),
-        ("PT Sahara Fajar Semesta", "P3MI", "Landbase (Hotel Darat)", 
-         "Jl. Raden Saleh No. 45, Cikini, Jakarta Pusat", "+62 21 3192 1234 / info@saharafajar.com", ""),
-        ("PT Amri Margatama", "P3MI", "Landbase (Hotel Darat)", 
-         "Jl. Tebet Barat Dalam Raya No. 34, Jakarta Selatan", "+62 21 8370 1234 / info@amrimargatama.co.id", "http://www.amrimargatama.co.id/"),
-        ("PT Jasatama Lestari Abadi", "P3MI", "Landbase (Hotel Darat)", 
-         "Jl. Danau Toba No. 12, Bendungan Hilir, Jakarta Pusat", "+62 21 570 1234 / recruitment@jasatamalestari.com", ""),
-        ("PT Monaco Crew Service", "SIUPPAK & P3MI", "Kapal Pesiar & Merchant", 
-         "Jl. Gatot Subroto No. 50, Denpasar, Bali", "+62 361 234567 / info@monacocrewing.com", ""),
-        ("PT Gasindo Marine Indonesia", "SIUPPAK & P3MI", "Merchant & Cruise", 
-         "Rukan Artha Gading Niaga Blok C No. 20, Kelapa Gading, Jakarta Utara", "+62 21 4585 7777 / crew@gasindomarine.com", ""),
-        ("PT Core Maritime Services (CCS)", "SIUPPAK & P3MI", "Kapal Pesiar & Cargo", 
-         "Ruko Inkopal Blok B No. 12, Jl. Boulevard Barat, Kelapa Gading, Jakarta Utara", "+62 21 4585 1111 / info@corecrewing.com", ""),
-        ("PT Bintang Mandiri Internasional", "P3MI", "Landbase (Hotel Darat)", 
-         "Jl. Margonda Raya No. 123, Depok", "+62 21 7721 1234 / info@bintangmandiri.com", ""),
-        ("PT Eka Widya Nusantara", "P3MI", "Landbase (Hotel Darat)", 
-         "Jl. Jend. Sudirman No. 89, Pekanbaru", "+62 761 12345 / info@ekawidya.com", ""),
-        ("PT Indo Semesta Lestari", "P3MI", "Landbase (Hotel Darat)", 
-         "Jl. Letjen S. Parman Kav. 21, Slipi, Jakarta Barat", "+62 21 530 1234 / recruitment@indosemesta.co.id", "")
-    ]
-    
-    for name, lic, a_type, addr, cont, web in agencies_data:
+    # Populate official agencies list
+    for name, lic, a_type, addr, cont, web in DEFAULT_AGENCIES:
         cursor.execute("""
             INSERT OR REPLACE INTO agencies (name, license_no, type, address, contact, website) 
             VALUES (?, ?, ?, ?, ?, ?)
@@ -454,3 +454,26 @@ def get_stats():
         "total_agencies": total_agencies,
         "total_subscribers": total_subscribers
     }
+
+def sync_default_agencies():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*) FROM agencies")
+    before = cursor.fetchone()[0]
+    
+    # We will use INSERT OR IGNORE so we don't overwrite user changes, 
+    # but still add any missing default official ones!
+    for name, lic, a_type, addr, cont, web in DEFAULT_AGENCIES:
+        cursor.execute("""
+            INSERT OR IGNORE INTO agencies (name, license_no, type, address, contact, website) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (name, lic, a_type, addr, cont, web))
+        
+    conn.commit()
+    
+    cursor.execute("SELECT COUNT(*) FROM agencies")
+    after = cursor.fetchone()[0]
+    
+    conn.close()
+    return after - before
