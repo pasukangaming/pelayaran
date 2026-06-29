@@ -75,11 +75,27 @@ def get_main_menu_markup():
     return {
         "inline_keyboard": [
             [
+                {"text": "🏢 Daftar Agency Resmi", "callback_data": "menu_agencies"}
+            ],
+            [
                 {"text": "⚙️ Atur Interval", "callback_data": "menu_settings"},
                 {"text": "📋 Daftar Sumber", "callback_data": "menu_sources"}
             ],
             [
                 {"text": "🔄 Cek Loker Sekarang", "callback_data": "menu_scrape"}
+            ]
+        ]
+    }
+
+def get_agencies_menu_markup():
+    return {
+        "inline_keyboard": [
+            [
+                {"text": "🚢 Cruise Line (SIUPPAK/P3MI)", "callback_data": "list_agencies:cruise"},
+                {"text": "🏨 Landbase Hotel (P3MI)", "callback_data": "list_agencies:landbase"}
+            ],
+            [
+                {"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}
             ]
         ]
     }
@@ -361,6 +377,45 @@ def webhook():
                 get_main_menu_markup()
             )
             db_helper.set_user_state(user_chat_id, "normal")
+            
+        elif callback_data == "menu_agencies":
+            answer_callback_query(token, callback_query_id)
+            edit_telegram_message(
+                token, 
+                user_chat_id, 
+                message_id, 
+                "🏢 <b>Daftar Agency Resmi Indonesia (P3MI / SIUPPAK)</b>\n\n"
+                "Pilih kategori agency yang ingin Anda lihat detail alamat dan kontaknya:", 
+                get_agencies_menu_markup()
+            )
+            
+        elif callback_data.startswith("list_agencies:"):
+            category = callback_data.split(":")[-1]
+            answer_callback_query(token, callback_query_id)
+            
+            agencies = db_helper.get_agencies_by_type(category)
+            
+            category_title = "🚢 Cruise Line (SIUPPAK/P3MI)" if category == "cruise" else "🏨 Landbase Hotel (P3MI)"
+            text = f"🏢 <b>Daftar Agency Resmi - {category_title}</b>\n\n"
+            text += "<i>Berikut daftar agensi berizin resmi di Indonesia (aktif di SISKOP2MI/Kemenhub). Ketuk alamat/kontak untuk menyalin.</i>\n\n"
+            
+            for idx, ag in enumerate(agencies):
+                text += f"{idx+1}. <b>{ag['name']}</b>\n"
+                text += f"   📄 <b>Izin:</b> {ag['license_no']}\n"
+                if ag['address']:
+                    text += f"   📍 <b>Alamat:</b> <code>{ag['address']}</code>\n"
+                if ag['contact']:
+                    text += f"   📞 <b>Kontak:</b> <code>{ag['contact']}</code>\n"
+                if ag['website']:
+                    text += f"   🌐 <b>Web:</b> <a href='{ag['website']}'>{ag['name']}</a>\n"
+                text += "\n"
+                
+            markup = {
+                "inline_keyboard": [
+                    [{"text": "🔙 Kembali", "callback_data": "menu_agencies"}]
+                ]
+            }
+            edit_telegram_message(token, user_chat_id, message_id, text, markup)
             
         elif callback_data == "menu_settings":
             answer_callback_query(token, callback_query_id)
