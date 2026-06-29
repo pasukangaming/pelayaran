@@ -28,15 +28,27 @@ def categorize_job(position):
     pos_lower = position.lower()
     deck_kws = ['master', 'captain', 'mate', 'officer', 'deck', 'bosun', 'ab ', 'os ', 'cadet', 'helmsman', 'jurumudi', 'kelasi']
     engine_kws = ['engineer', 'engine', 'oiler', 'wiper', 'fitter', 'electrician', 'motorman']
-    galley_kws = ['cook', 'steward', 'messboy', 'waiter', 'chef', 'galley', 'laundry', 'utility']
-    landbase_kws = ['housekeeping', 'receptionist', 'front office', 'spa ', 'hotel darat', 'butler', 'cleaner', 'landbase']
+    hk_kws = ['housekeeping', 'cabin steward', 'cabin attendant', 'cleaner', 'hk ', 'room boy', 'hk assistant']
+    fnb_kws = ['waiter', 'waitress', 'restaurant steward', 'buffet steward', 'wine steward', 'messboy', 'f&b', 'food & beverage']
+    culinary_kws = ['cook', 'chef', 'galley', 'culinary', 'commis', 'baker', 'pastry', 'butcher', 'cook helper', 'demi chef']
+    bar_kws = ['bar ', 'bartender', 'bar utility', 'bar steward', 'bar boy', 'bar keep']
+    laundry_kws = ['laundry', 'laundryman', 'laundry utility', 'laundry operator', 'laundry attendant']
+    landbase_kws = ['hotel darat', 'receptionist', 'front office', 'spa ', 'butler', 'cleaner', 'landbase']
     
-    if any(kw in pos_lower for kw in deck_kws):
+    if any(kw in pos_lower for kw in bar_kws):
+        return "bar"
+    elif any(kw in pos_lower for kw in laundry_kws):
+        return "laundry"
+    elif any(kw in pos_lower for kw in hk_kws):
+        return "housekeeping"
+    elif any(kw in pos_lower for kw in culinary_kws):
+        return "culinary"
+    elif any(kw in pos_lower for kw in fnb_kws):
+        return "fnb"
+    elif any(kw in pos_lower for kw in deck_kws):
         return "deck"
     elif any(kw in pos_lower for kw in engine_kws):
         return "engine"
-    elif any(kw in pos_lower for kw in galley_kws):
-        return "galley"
     elif any(kw in pos_lower for kw in landbase_kws):
         return "landbase"
     return "other"
@@ -152,8 +164,16 @@ def get_subscribe_markup(current_sub):
             {"text": "🔧 Engine" + (" (Aktif)" if current_sub == "engine" else ""), "callback_data": "sub:engine"}
         ],
         [
-            {"text": "🍽 Galley" + (" (Aktif)" if current_sub == "galley" else ""), "callback_data": "sub:galley"},
-            {"text": "🏨 Hotel" + (" (Aktif)" if current_sub == "landbase" else ""), "callback_data": "sub:landbase"}
+            {"text": "🧹 Housekeeping" + (" (Aktif)" if current_sub == "housekeeping" else ""), "callback_data": "sub:housekeeping"},
+            {"text": "🍹 Bar" + (" (Aktif)" if current_sub == "bar" else ""), "callback_data": "sub:bar"}
+        ],
+        [
+            {"text": "🍽 Food & Beverage" + (" (Aktif)" if current_sub == "fnb" else ""), "callback_data": "sub:fnb"},
+            {"text": "🍳 Culinary" + (" (Aktif)" if current_sub == "culinary" else ""), "callback_data": "sub:culinary"}
+        ],
+        [
+            {"text": "🧺 Laundry" + (" (Aktif)" if current_sub == "laundry" else ""), "callback_data": "sub:laundry"},
+            {"text": "🏨 Hotel Darat" + (" (Aktif)" if current_sub == "landbase" else ""), "callback_data": "sub:landbase"}
         ]
     ]
     if current_sub:
@@ -169,8 +189,16 @@ def get_jobs_menu_markup():
                 {"text": "🔧 Engine (Engineer & Rating)", "callback_data": "list_jobs:engine"}
             ],
             [
-                {"text": "🍽 Steward & Galley", "callback_data": "list_jobs:galley"},
-                {"text": "🏨 Landbase Hotel", "callback_data": "list_jobs:landbase"}
+                {"text": "🧹 Housekeeping Department", "callback_data": "list_jobs:housekeeping"},
+                {"text": "🍹 Bar Department", "callback_data": "list_jobs:bar"}
+            ],
+            [
+                {"text": "🍽 Food & Beverage Department", "callback_data": "list_jobs:fnb"},
+                {"text": "🍳 Culinary Department", "callback_data": "list_jobs:culinary"}
+            ],
+            [
+                {"text": "🧺 Laundry Department", "callback_data": "list_jobs:laundry"},
+                {"text": "🏨 Landbase Hotel (Darat)", "callback_data": "list_jobs:landbase"}
             ],
             [
                 {"text": "🔍 Cari Posisi / Ketik Bebas", "callback_data": "menu_search_jobs"}
@@ -593,8 +621,12 @@ def webhook():
             keywords_map = {
                 "deck": ['master', 'captain', 'mate', 'officer', 'deck', 'bosun', 'ab ', 'os ', 'cadet', 'Helmsman', 'jurumudi', 'kelasi'],
                 "engine": ['engineer', 'engine', 'oiler', 'wiper', 'fitter', 'electrician', 'motorman'],
-                "galley": ['cook', 'steward', 'messboy', 'waiter', 'chef', 'galley', 'laundry', 'utility'],
-                "landbase": ['housekeeping', 'receptionist', 'front office', 'spa ', 'hotel darat', 'butler', 'cleaner', 'landbase']
+                "housekeeping": ['housekeeping', 'cabin steward', 'cabin attendant', 'cleaner', 'hk ', 'room boy', 'hk assistant'],
+                "fnb": ['waiter', 'waitress', 'restaurant steward', 'buffet steward', 'wine steward', 'messboy', 'f&b', 'food & beverage'],
+                "culinary": ['cook', 'chef', 'galley', 'culinary', 'commis', 'baker', 'pastry', 'butcher', 'cook helper', 'demi chef'],
+                "bar": ['bar ', 'bartender', 'bar utility', 'bar steward', 'bar boy', 'bar keep'],
+                "laundry": ['laundry', 'laundryman', 'laundry utility', 'laundry operator', 'laundry attendant'],
+                "landbase": ['hotel darat', 'receptionist', 'front office', 'spa ', 'butler', 'cleaner', 'landbase']
             }
             
             keywords = keywords_map.get(category, [])
@@ -603,7 +635,11 @@ def webhook():
             category_titles = {
                 "deck": "🚢 Deck (Perwira & Rating)",
                 "engine": "🔧 Engine (Engineer & Rating)",
-                "galley": "🍽 Steward & Galley",
+                "housekeeping": "🧹 Housekeeping Department",
+                "fnb": "🍽 Food & Beverage Department",
+                "culinary": "🍳 Culinary Department",
+                "bar": "🍹 Bar Department",
+                "laundry": "🧺 Laundry Department",
                 "landbase": "🏨 Landbase Hotel"
             }
             
@@ -798,7 +834,11 @@ def webhook():
             cat_titles = {
                 "deck": "🚢 Deck (Perwira & Rating)",
                 "engine": "🔧 Engine (Engineer & Rating)",
-                "galley": "🍽 Galley/Steward",
+                "housekeeping": "🧹 Housekeeping Department",
+                "fnb": "🍽 Food & Beverage Department",
+                "culinary": "🍳 Culinary Department",
+                "bar": "🍹 Bar Department",
+                "laundry": "🧺 Laundry Department",
                 "landbase": "🏨 Hotel Darat Internasional"
             }
             
@@ -821,7 +861,11 @@ def webhook():
                 cat_titles = {
                     "deck": "Deck Department",
                     "engine": "Engine Department",
-                    "galley": "Galley/Steward",
+                    "housekeeping": "Housekeeping Department",
+                    "fnb": "Food & Beverage Department",
+                    "culinary": "Culinary Department",
+                    "bar": "Bar Department",
+                    "laundry": "Laundry Department",
                     "landbase": "Hotel Darat"
                 }
                 answer_callback_query(token, callback_query_id, f"Langganan aktif untuk {cat_titles[sub_action]}!")
@@ -830,7 +874,11 @@ def webhook():
             cat_titles = {
                 "deck": "🚢 Deck (Perwira & Rating)",
                 "engine": "🔧 Engine (Engineer & Rating)",
-                "galley": "🍽 Galley/Steward",
+                "housekeeping": "🧹 Housekeeping Department",
+                "fnb": "🍽 Food & Beverage Department",
+                "culinary": "🍳 Culinary Department",
+                "bar": "🍹 Bar Department",
+                "laundry": "🧺 Laundry Department",
                 "landbase": "🏨 Hotel Darat Internasional"
             }
             sub_title = cat_titles.get(current_sub, "Belum Berlangganan")
