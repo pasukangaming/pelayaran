@@ -200,14 +200,14 @@ def test_telegram():
             response = requests.get(url, timeout=4)
             elapsed = time.time() - start_time
             results[name] = {
-                "status": "success",
+                "status_code": response.status_code,
                 "elapsed": f"{elapsed:.2f}s",
-                "ok": response.json().get("ok")
+                "body_preview": response.text[:150]
             }
         except Exception as e:
             results[name] = {
                 "status": "error",
-                "message": str(e)[:100]
+                "message": str(e)[:150]
             }
             
     return jsonify(results)
