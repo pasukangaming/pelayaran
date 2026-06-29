@@ -326,7 +326,7 @@ def run_scrape_and_post(manual_trigger=False, user_chat_id=None):
         db_helper.save_job(job)
         if not db_helper.is_job_sent(job_id):
             message = (
-                f"🚢 <b>LOWONGAN PELAUT BARU</b>\n\n"
+                f"💼 <b>LOWONGAN JOB BARU</b>\n\n"
                 f"💼 <b>Posisi:</b> {scrapers.escape_html(job['position'])}\n"
                 f"🛥 <b>Jenis Kapal:</b> {scrapers.escape_html(job['vessel_type'])}\n"
                 f"💵 <b>Gaji:</b> {scrapers.escape_html(job['salary'])}\n"
@@ -456,7 +456,7 @@ def scrape_step():
                 db_helper.save_job(job)
                 if not db_helper.is_job_sent(job_id):
                     message = (
-                        f"🚢 <b>LOWONGAN PELAUT BARU</b>\n\n"
+                        f"💼 <b>LOWONGAN JOB BARU</b>\n\n"
                         f"💼 <b>Posisi:</b> {scrapers.escape_html(job['position'])}\n"
                         f"🛥 <b>Jenis Kapal:</b> {scrapers.escape_html(job['vessel_type'])}\n"
                         f"💵 <b>Gaji:</b> {scrapers.escape_html(job['salary'])}\n"
