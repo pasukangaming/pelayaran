@@ -7,13 +7,13 @@ DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pelayaran.db
 # Curated, official verified P3MI/SIUPPAK agencies in Indonesia
 DEFAULT_AGENCIES = [
     ("PT Alpha Magsaysay Careers", "SIUPPAK & P3MI", "Kapal Pesiar & Hospitality", 
-     "Jalan Batu Ceper Raya Nomor 52, Kebon Kelapa, Gambir, Jakarta Pusat", "+62 21 7591 2517 / recruitment@alphamagsaysay.co.id / IG: https://www.instagram.com/magsaysaycareers/", "https://www.alphamagsaysaycareers.com/"),
+     "Jalan Batu Ceper Raya Nomor 52, Kebon Kelapa, Gambir, Jakarta Pusat", "+62 21 7591 2517 / recruitment@alphamagsaysay.co.id / IG: https://www.instagram.com/alphamagsaysay/", "https://www.alphamagsaysaycareers.com/"),
     ("PT Alpha Magsaysay International", "SIUPPAK & P3MI", "Kapal Pesiar & Hospitality", 
-     "Jalan Batu Ceper Raya Nomor 52, Kebon Kelapa, Gambir, Jakarta Pusat", "+62 21 7591 2517 / recruitment@alphamagsaysay.co.id / IG: https://www.instagram.com/magsaysaycareers/", "https://www.alphamagsaysay.com/"),
+     "Jalan Batu Ceper Raya Nomor 52, Kebon Kelapa, Gambir, Jakarta Pusat", "+62 21 7591 2517 / recruitment@alphamagsaysay.co.id / IG: https://www.instagram.com/alphamagsaysay/", "https://www.alphamagsaysay.com/"),
     ("PT Ratu Oceania Raya Career", "SIUPPAK & P3MI", "Kapal Pesiar", 
-     "Plaza DM 12th Floor, Jl. Jend. Sudirman Kav 25, Jakarta Selatan", "+62 21 5267073 / info@ratuoceania.com / IG: https://www.instagram.com/ratuoceaniaraya/", "https://www.ratuoceaniaraya.com/career"),
+     "Plaza DM 12th Floor, Jl. Jend. Sudirman Kav 25, Jakarta Selatan", "+62 21 5267073 / info@ratuoceania.com / IG: https://www.instagram.com/officialratuoceaniaraya/", "https://www.ratuoceaniaraya.com/career"),
     ("PT Ratu Oceania Raya Web", "SIUPPAK & P3MI", "Kapal Pesiar", 
-     "Plaza DM 12th Floor, Jl. Jend. Sudirman Kav 25, Jakarta Selatan", "+62 21 5267073 / info@ratuoceania.com / IG: https://www.instagram.com/ratuoceaniaraya/", "https://www.ratuoceaniaraya.com/"),
+     "Plaza DM 12th Floor, Jl. Jend. Sudirman Kav 25, Jakarta Selatan", "+62 21 5267073 / info@ratuoceania.com / IG: https://www.instagram.com/officialratuoceaniaraya/", "https://www.ratuoceaniaraya.com/"),
     ("PT Cipta Wira Tirta Jobs", "SIUPPAK & P3MI", "Kapal Pesiar & Hospitality", 
      "Jalan Kebon Sirih No. 17-19, Jakarta Pusat", "+62 21 391 1515 / recruitment@ciptawiratirta.com / IG: https://www.instagram.com/ciptawiratirta/", "https://www.ciptawiratirta.com/jobs"),
     ("PT Cipta Wira Tirta Web", "SIUPPAK & P3MI", "Kapal Pesiar & Hospitality", 
