@@ -366,12 +366,23 @@ def webhook():
             
             import subprocess
             import sys
+            
+            # Redirect stdout and stderr to files for debugging
+            log_dir = os.path.dirname(__file__)
+            try:
+                stdout_log = open(os.path.join(log_dir, "runner_stdout.log"), "w")
+                stderr_log = open(os.path.join(log_dir, "runner_stderr.log"), "w")
+            except Exception as e:
+                stdout_log = subprocess.DEVNULL
+                stderr_log = subprocess.DEVNULL
+                print(f"Error opening log files: {e}")
+            
             # Start background runner process for sequential scraping with real-time progress bar
             subprocess.Popen(
-                [sys.executable, os.path.join(os.path.dirname(__file__), "scrape_runner.py"), str(user_chat_id), str(message_id)],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                cwd=os.path.dirname(__file__),
+                [sys.executable, os.path.join(log_dir, "scrape_runner.py"), str(user_chat_id), str(message_id)],
+                stdout=stdout_log,
+                stderr=stderr_log,
+                cwd=log_dir,
                 start_new_session=True
             )
             
