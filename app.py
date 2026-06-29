@@ -290,6 +290,47 @@ def get_settings_markup(current_interval):
     keyboard.append([{"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}])
     return {"inline_keyboard": keyboard}
 
+def format_job_message(job):
+    pos = scrapers.escape_html(job['position'])
+    comp = scrapers.escape_html(job['company'])
+    link = job['link']
+    
+    vessel = job['vessel_type'].strip()
+    if not vessel or vessel.lower() in ["lihat detail", "detail", "n/a", "unknown", "lihat detail loker"]:
+        vessel_str = f"<a href='{link}'>Cek Detail Kapal di Website</a>"
+    else:
+        vessel_str = scrapers.escape_html(vessel)
+        
+    sal = job['salary'].strip()
+    if not sal or sal.lower() in ["hubungi perusahaan", "negotiable", "hubungi agency", "discuss", "unknown", "hubungi perusahaan / agency"]:
+        salary_str = f"Sesuai Standar Perusahaan (Hubungi Agency / Tanyakan Saat Interview)"
+    else:
+        salary_str = scrapers.escape_html(sal)
+        
+    jd = job['join_date'].strip()
+    if not jd or jd.lower() in ["lihat detail", "immediately", "secepatnya", "asap", "unknown", "lihat detail loker"]:
+        join_str = f"Segera / <a href='{link}'>Lihat Jadwal Keberangkatan</a>"
+    else:
+        join_str = scrapers.escape_html(jd)
+        
+    dur = job['duration'].strip()
+    if not dur or dur.lower() in ["sesuai kontrak", "tbd", "unknown", "lihat detail loker"]:
+        duration_str = f"Sesuai Perjanjian Kerja Laut (PKL) / Cek Detail Loker"
+    else:
+        duration_str = scrapers.escape_html(dur)
+        
+    message = (
+        f"💼 <b>LOWONGAN JOB BARU</b>\n\n"
+        f"💼 <b>Posisi:</b> {pos}\n"
+        f"🛥 <b>Jenis Kapal:</b> {vessel_str}\n"
+        f"💵 <b>Gaji:</b> {salary_str}\n"
+        f"📅 <b>Join Date:</b> {join_str}\n"
+        f"⏱ <b>Kontrak:</b> {duration_str}\n"
+        f"🏢 <b>Perusahaan:</b> {comp}\n\n"
+        f"🔗 <a href='{link}'>Detail &amp; Apply Loker</a>"
+    )
+    return message
+
 # Business Logic for Scraper (Used by Cron)
 def run_scrape_and_post(manual_trigger=False, user_chat_id=None):
     token, chat_id = get_bot_credentials()
@@ -325,16 +366,7 @@ def run_scrape_and_post(manual_trigger=False, user_chat_id=None):
         job_id = job["id"]
         db_helper.save_job(job)
         if not db_helper.is_job_sent(job_id):
-            message = (
-                f"💼 <b>LOWONGAN JOB BARU</b>\n\n"
-                f"💼 <b>Posisi:</b> {scrapers.escape_html(job['position'])}\n"
-                f"🛥 <b>Jenis Kapal:</b> {scrapers.escape_html(job['vessel_type'])}\n"
-                f"💵 <b>Gaji:</b> {scrapers.escape_html(job['salary'])}\n"
-                f"📅 <b>Join Date:</b> {scrapers.escape_html(job['join_date'])}\n"
-                f"⏱ <b>Kontrak:</b> {scrapers.escape_html(job['duration'])}\n"
-                f"🏢 <b>Perusahaan:</b> {scrapers.escape_html(job['company'])}\n\n"
-                f"🔗 <a href='{job['link']}'>Detail &amp; Apply Loker</a>"
-            )
+            message = format_job_message(job)
             
             success = send_telegram_message(token, chat_id, message)
             if success and success.get("ok"):
@@ -345,11 +377,18 @@ def run_scrape_and_post(manual_trigger=False, user_chat_id=None):
                 job_cat = categorize_job(job["position"])
                 if job_cat != "other":
                     subs = db_helper.get_subscribers_by_category(job_cat)
+                    
+                    sal = job['salary'].strip()
+                    if not sal or sal.lower() in ["hubungi perusahaan", "negotiable", "hubungi agency", "discuss", "unknown", "hubungi perusahaan / agency"]:
+                        salary_str = "Sesuai Standar Perusahaan"
+                    else:
+                        salary_str = scrapers.escape_html(sal)
+                        
                     alert_msg = (
                         f"🔔 <b>[ALERT LANGGANAN] Loker Baru Sesuai Departemen Anda!</b>\n\n"
                         f"💼 <b>Posisi:</b> {scrapers.escape_html(job['position'])}\n"
                         f"🏢 <b>Perusahaan:</b> {scrapers.escape_html(job['company'])}\n"
-                        f"💵 <b>Gaji:</b> {scrapers.escape_html(job['salary'])}\n"
+                        f"💵 <b>Gaji:</b> {salary_str}\n"
                         f"🔗 <a href='{job['link']}'>Detail &amp; Apply Loker</a>"
                     )
                     for sub_chat_id in subs:
@@ -455,16 +494,7 @@ def scrape_step():
                 job_id = job["id"]
                 db_helper.save_job(job)
                 if not db_helper.is_job_sent(job_id):
-                    message = (
-                        f"💼 <b>LOWONGAN JOB BARU</b>\n\n"
-                        f"💼 <b>Posisi:</b> {scrapers.escape_html(job['position'])}\n"
-                        f"🛥 <b>Jenis Kapal:</b> {scrapers.escape_html(job['vessel_type'])}\n"
-                        f"💵 <b>Gaji:</b> {scrapers.escape_html(job['salary'])}\n"
-                        f"📅 <b>Join Date:</b> {scrapers.escape_html(job['join_date'])}\n"
-                        f"⏱ <b>Kontrak:</b> {scrapers.escape_html(job['duration'])}\n"
-                        f"🏢 <b>Perusahaan:</b> {scrapers.escape_html(job['company'])}\n\n"
-                        f"🔗 <a href='{job['link']}'>Detail &amp; Apply Loker</a>"
-                    )
+                    message = format_job_message(job)
                     success = send_telegram_message(token, chat_id, message)
                     if success and success.get("ok"):
                         db_helper.mark_job_as_sent(job_id)
@@ -474,11 +504,18 @@ def scrape_step():
                         job_cat = categorize_job(job["position"])
                         if job_cat != "other":
                             subs = db_helper.get_subscribers_by_category(job_cat)
+                            
+                            sal = job['salary'].strip()
+                            if not sal or sal.lower() in ["hubungi perusahaan", "negotiable", "hubungi agency", "discuss", "unknown", "hubungi perusahaan / agency"]:
+                                salary_str = "Sesuai Standar Perusahaan"
+                            else:
+                                salary_str = scrapers.escape_html(sal)
+                                
                             alert_msg = (
                                 f"🔔 <b>[ALERT LANGGANAN] Loker Baru Sesuai Departemen Anda!</b>\n\n"
                                 f"💼 <b>Posisi:</b> {scrapers.escape_html(job['position'])}\n"
                                 f"🏢 <b>Perusahaan:</b> {scrapers.escape_html(job['company'])}\n"
-                                f"💵 <b>Gaji:</b> {scrapers.escape_html(job['salary'])}\n"
+                                f"💵 <b>Gaji:</b> {salary_str}\n"
                                 f"🔗 <a href='{job['link']}'>Detail &amp; Apply Loker</a>"
                             )
                             for sub_chat_id in subs:
@@ -582,9 +619,21 @@ def webhook():
                 if jobs:
                     text_res = f"🔍 <b>Hasil Pencarian Lowongan: '{query}'</b>\n\n"
                     for idx, j in enumerate(jobs):
+                        vessel = j['vessel_type'].strip()
+                        if not vessel or vessel.lower() in ["lihat detail", "detail", "n/a", "unknown", "lihat detail loker"]:
+                            vessel = "Cek Detail Kapal"
+                            
+                        sal = j['salary'].strip()
+                        if not sal or sal.lower() in ["hubungi perusahaan", "negotiable", "hubungi agency", "discuss", "unknown", "hubungi perusahaan / agency"]:
+                            sal = "Standar Perusahaan"
+                            
+                        jd = j['join_date'].strip()
+                        if not jd or jd.lower() in ["lihat detail", "immediately", "secepatnya", "asap", "unknown", "lihat detail loker"]:
+                            jd = "Segera"
+                            
                         text_res += f"{idx+1}. <b>{j['position']}</b>\n"
-                        text_res += f"   🏢 {j['company']} | 🛥 {j['vessel_type']}\n"
-                        text_res += f"   💵 Gaji: {j['salary']} | 📅 Join: {j['join_date']}\n"
+                        text_res += f"   🏢 {j['company']} | 🛥 {vessel}\n"
+                        text_res += f"   💵 Gaji: {sal} | 📅 Join: {jd}\n"
                         text_res += f"   🔗 <a href='{j['link']}'>Detail Loker</a>\n\n"
                 else:
                     text_res = f"❌ Tidak ditemukan lowongan dengan kata kunci: <b>{query}</b>.\n\nCoba cari kata kunci lainnya (misal: AB, Fitter, Waiter)."
@@ -659,9 +708,21 @@ def webhook():
             
             if jobs:
                 for idx, j in enumerate(jobs):
+                    vessel = j['vessel_type'].strip()
+                    if not vessel or vessel.lower() in ["lihat detail", "detail", "n/a", "unknown", "lihat detail loker"]:
+                        vessel = "Cek Detail Kapal"
+                        
+                    sal = j['salary'].strip()
+                    if not sal or sal.lower() in ["hubungi perusahaan", "negotiable", "hubungi agency", "discuss", "unknown", "hubungi perusahaan / agency"]:
+                        sal = "Standar Perusahaan"
+                        
+                    jd = j['join_date'].strip()
+                    if not jd or jd.lower() in ["lihat detail", "immediately", "secepatnya", "asap", "unknown", "lihat detail loker"]:
+                        jd = "Segera"
+                        
                     text += f"{idx+1}. <b>{j['position']}</b>\n"
-                    text += f"   🏢 {j['company']} | 🛥 {j['vessel_type']}\n"
-                    text += f"   💵 Gaji: {j['salary']} | 📅 Join: {j['join_date']}\n"
+                    text += f"   🏢 {j['company']} | 🛥 {vessel}\n"
+                    text += f"   💵 Gaji: {sal} | 📅 Join: {jd}\n"
                     text += f"   🔗 <a href='{j['link']}'>Detail Loker</a>\n\n"
             else:
                 text += "❌ Saat ini belum ada lowongan aktif di database untuk kategori ini.\n\n<i>Silakan lakukan scrape data terbaru menggunakan tombol 'Cek Loker Sekarang'.</i>"
