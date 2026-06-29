@@ -47,7 +47,10 @@ DEFAULT_AGENCIES = [
     ("PT Elite International Recruitment", "P3MI", "Landbase (Hotel Darat)", 
      "Sudirman Plaza, Plaza Marein, Jakarta Selatan", "info@eliteintlrecruit.com / IG: https://www.instagram.com/tei.recruitment.official/", "https://www.eliteintlrecruit.com/"),
     ("PT ATS Bali", "P3MI", "Landbase (Hotel Darat)", 
-     "ATS Bali Office, Denpasar, Bali", "recruitment@atsbali.com / IG: https://www.instagram.com/atsbaliofficial/", "https://www.atsbali.com/")
+     "ATS Bali Office, Denpasar, Bali", "recruitment@atsbali.com / IG: https://www.instagram.com/atsbaliofficial/", "https://www.atsbali.com/"),
+    ("PT Validitas Bonafid", "SIUPPAK & P3MI", "Kapal Pesiar & Hospitality",
+     "Ruko Puri Permata Purwo Kav 2, Sambiroto, Purwomartani, Kalasan, Sleman, DIY 55571",
+     "+62 878 39393553 / info@validitasbonafid.com", "https://www.validitasbonafid.com/")
 ]
 
 def get_db_connection():
