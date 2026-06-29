@@ -65,7 +65,11 @@ DEFAULT_AGENCIES = [
     ("PT Eka Widya Nusantara", "P3MI", "Landbase (Hotel Darat)", 
          "Jl. Jend. Sudirman No. 89, Pekanbaru", "+62 761 12345 / info@ekawidya.com", ""),
     ("PT Indo Semesta Lestari", "P3MI", "Landbase (Hotel Darat)", 
-         "Jl. Letjen S. Parman Kav. 21, Slipi, Jakarta Barat", "+62 21 530 1234 / recruitment@indosemesta.co.id", "")
+         "Jl. Letjen S. Parman Kav. 21, Slipi, Jakarta Barat", "+62 21 530 1234 / recruitment@indosemesta.co.id", ""),
+    ("Cast-A-Way Cruise Recruiting (Hospitality)", "Official International Agency", "Kapal Pesiar & Hospitality", 
+         "International Recruiting Office", "info@cast-a-way.com", "https://cast-a-way.com/hospitality/"),
+    ("Cast-A-Way Cruise Recruiting (F&B)", "Official International Agency", "Kapal Pesiar & Hospitality", 
+         "International Recruiting Office", "info@cast-a-way.com", "https://cast-a-way.com/fb-operations/")
 ]
 
 def get_db_connection():
