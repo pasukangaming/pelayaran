@@ -225,7 +225,7 @@ def get_sources_markup(sources):
                 {"text": f"❌ Hapus {src['name'][:20]}...", "callback_data": f"delete_source:{src['id']}"}
             ])
     keyboard.append([
-        {"text": "➕ Tambah Sumber Baru", "callback_data": "menu_add_source"},
+        {"text": "➕ Tambah Web Agency (Scrape)", "callback_data": "menu_add_source"},
         {"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}
     ])
     return {"inline_keyboard": keyboard}
@@ -487,11 +487,13 @@ def webhook():
             state = db_helper.get_user_state(user_chat_id)
             if state == "awaiting_source_url":
                 if text.startswith("http://") or text.startswith("https://"):
-                    success = db_helper.add_source(name=text, url=text, s_type="rss")
+                    parsed_url = urllib.parse.urlparse(text)
+                    domain = parsed_url.netloc.replace("www.", "")
+                    success = db_helper.add_source(name=domain, url=text, s_type="web")
                     if success:
-                        send_telegram_message(token, user_chat_id, "✅ Sumber baru berhasil ditambahkan ke database!")
+                        send_telegram_message(token, user_chat_id, "✅ Website Karir Agency berhasil ditambahkan ke daftar scrape!")
                     else:
-                        send_telegram_message(token, user_chat_id, "❌ URL sudah terdaftar di database.")
+                        send_telegram_message(token, user_chat_id, "❌ URL Agency ini sudah terdaftar di database.")
                 else:
                     send_telegram_message(token, user_chat_id, "❌ Format URL tidak valid. Harus diawali dengan http:// atau https://")
                 
@@ -931,7 +933,10 @@ def webhook():
         elif callback_data == "menu_sources":
             answer_callback_query(token, callback_query_id)
             sources = db_helper.get_sources()
-            text_sources = "📋 <b>Daftar Sumber Loker Aktif:</b>\n\n"
+            text_sources = (
+                "📋 <b>Daftar Web Agency yang Di-scrape Aktif:</b>\n\n"
+                "<i>Bot akan memindai halaman karir dari agensi resmi berikut untuk mencari lowongan terbaru secara otomatis.</i>\n\n"
+            )
             for idx, src in enumerate(sources):
                 text_sources += f"{idx+1}. <b>{src['name']}</b> ({src['type']})\nURL: <code>{src['url']}</code>\n\n"
             
@@ -944,10 +949,11 @@ def webhook():
                 token, 
                 user_chat_id, 
                 message_id, 
-                "➕ <b>Tambah Sumber Loker Manual</b>\n\n"
-                "Silakan ketik dan kirimkan link URL (RSS Feed XML atau alamat halaman web) yang ingin Anda tambahkan sebagai sumber manual.\n\n"
-                "Contoh: <code>https://wintermar.com/careers/rss</code>\n\n"
-                "<i>Bot akan menunggu input teks dari Anda...</i>"
+                "➕ <b>Tambah Halaman Karir Agency Baru</b>\n\n"
+                "Silakan ketik dan kirimkan link URL halaman lowongan/karir (atau RSS feed) dari agency resmi baru yang ingin ditambahkan ke daftar scrape.\n\n"
+                "Contoh: <code>https://wintermar.com/careers</code>\n\n"
+                "<i>Bot akan menunggu input link URL dari Anda...</i>",
+                {"inline_keyboard": [[{"text": "🔙 Batal", "callback_data": "menu_sources"}]]}
             )
             
         elif callback_data.startswith("delete_source:"):
@@ -955,12 +961,15 @@ def webhook():
             deleted = db_helper.delete_source(source_id)
             
             if deleted:
-                answer_callback_query(token, callback_query_id, "Sumber manual berhasil dihapus.")
+                answer_callback_query(token, callback_query_id, "Web karir agency berhasil dihapus.")
             else:
                 answer_callback_query(token, callback_query_id, "Gagal menghapus (Sumber Bawaan tidak bisa dihapus).")
                 
             sources = db_helper.get_sources()
-            text_sources = "📋 <b>Daftar Sumber Loker Aktif:</b>\n\n"
+            text_sources = (
+                "📋 <b>Daftar Web Agency yang Di-scrape Aktif:</b>\n\n"
+                "<i>Bot akan memindai halaman karir dari agensi resmi berikut untuk mencari lowongan terbaru secara otomatis.</i>\n\n"
+            )
             for idx, src in enumerate(sources):
                 text_sources += f"{idx+1}. <b>{src['name']}</b> ({src['type']})\nURL: <code>{src['url']}</code>\n\n"
             edit_telegram_message(token, user_chat_id, message_id, text_sources, get_sources_markup(sources))
