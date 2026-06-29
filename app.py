@@ -998,16 +998,36 @@ def webhook():
 
 @app.route("/debug-log")
 def debug_log():
-    log_path = "/var/log/amanputradewa.pythonanywhere.com.error.log"
-    if not os.path.exists(log_path):
-        return jsonify({"error": f"Log file not found at {log_path}"})
+    info = {}
     try:
-        with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
-            lines = f.readlines()
-            last_lines = lines[-100:]
-            return "<pre>" + "".join(last_lines) + "</pre>"
+        conn = db_helper.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(agencies)")
+        info["agencies_columns"] = [dict(row) for row in cursor.fetchall()]
+        conn.close()
     except Exception as e:
-        return jsonify({"error": str(e)})
+        info["db_error"] = str(e)
+        
+    try:
+        err_path = "/var/log/amanputradewa.pythonanywhere.com.error.log"
+        srv_path = "/var/log/amanputradewa.pythonanywhere.com.server.log"
+        
+        err_lines = []
+        if os.path.exists(err_path):
+            with open(err_path, "r", encoding="utf-8", errors="ignore") as f:
+                err_lines = f.readlines()[-60:]
+                
+        srv_lines = []
+        if os.path.exists(srv_path):
+            with open(srv_path, "r", encoding="utf-8", errors="ignore") as f:
+                srv_lines = f.readlines()[-60:]
+                
+        info["error_log"] = err_lines
+        info["server_log"] = srv_lines
+    except Exception as e:
+        info["log_error"] = str(e)
+        
+    return jsonify(info)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
