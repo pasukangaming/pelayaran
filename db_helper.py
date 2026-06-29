@@ -124,7 +124,8 @@ def init_db(default_token=None, default_chat_id=None):
         cursor.execute("SELECT created_at FROM agencies LIMIT 1")
     except sqlite3.OperationalError:
         try:
-            cursor.execute("ALTER TABLE agencies ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+            cursor.execute("ALTER TABLE agencies ADD COLUMN created_at TIMESTAMP")
+            cursor.execute("UPDATE agencies SET created_at = datetime('now', 'localtime') WHERE created_at IS NULL")
             conn.commit()
             print("Successfully added created_at column to agencies table via migration.")
         except Exception as e:
