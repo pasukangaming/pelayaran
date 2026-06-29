@@ -158,26 +158,36 @@ def get_cv_menu_markup():
     }
 
 def get_subscribe_markup(current_sub):
+    active_cats = []
+    if current_sub:
+        if current_sub == "all":
+            active_cats = ["deck", "engine", "housekeeping", "bar", "fnb", "culinary", "laundry", "landbase"]
+        else:
+            active_cats = [p.strip() for p in current_sub.split(",") if p.strip()]
+            
     keyboard = [
         [
-            {"text": "🚢 Deck" + (" (Aktif)" if current_sub == "deck" else ""), "callback_data": "sub:deck"},
-            {"text": "🔧 Engine" + (" (Aktif)" if current_sub == "engine" else ""), "callback_data": "sub:engine"}
+            {"text": "🚢 Deck" + (" ✅" if "deck" in active_cats else ""), "callback_data": "sub_toggle:deck"},
+            {"text": "🔧 Engine" + (" ✅" if "engine" in active_cats else ""), "callback_data": "sub_toggle:engine"}
         ],
         [
-            {"text": "🧹 Housekeeping" + (" (Aktif)" if current_sub == "housekeeping" else ""), "callback_data": "sub:housekeeping"},
-            {"text": "🍹 Bar" + (" (Aktif)" if current_sub == "bar" else ""), "callback_data": "sub:bar"}
+            {"text": "🧹 Housekeeping" + (" ✅" if "housekeeping" in active_cats else ""), "callback_data": "sub_toggle:housekeeping"},
+            {"text": "🍹 Bar" + (" ✅" if "bar" in active_cats else ""), "callback_data": "sub_toggle:bar"}
         ],
         [
-            {"text": "🍽 Food & Beverage" + (" (Aktif)" if current_sub == "fnb" else ""), "callback_data": "sub:fnb"},
-            {"text": "🍳 Culinary" + (" (Aktif)" if current_sub == "culinary" else ""), "callback_data": "sub:culinary"}
+            {"text": "🍽 Food & Beverage" + (" ✅" if "fnb" in active_cats else ""), "callback_data": "sub_toggle:fnb"},
+            {"text": "🍳 Culinary" + (" ✅" if "culinary" in active_cats else ""), "callback_data": "sub_toggle:culinary"}
         ],
         [
-            {"text": "🧺 Laundry" + (" (Aktif)" if current_sub == "laundry" else ""), "callback_data": "sub:laundry"},
-            {"text": "🏨 Hotel Darat" + (" (Aktif)" if current_sub == "landbase" else ""), "callback_data": "sub:landbase"}
+            {"text": "🧺 Laundry" + (" ✅" if "laundry" in active_cats else ""), "callback_data": "sub_toggle:laundry"},
+            {"text": "🏨 Hotel Darat" + (" ✅" if "landbase" in active_cats else ""), "callback_data": "sub_toggle:landbase"}
+        ],
+        [
+            {"text": "✨ Semua Departemen" + (" ✅" if current_sub == "all" else ""), "callback_data": "sub_action:all"}
         ]
     ]
     if current_sub:
-        keyboard.append([{"text": "🔕 Berhenti Berlangganan", "callback_data": "sub:unsubscribe"}])
+        keyboard.append([{"text": "🔕 Berhenti Berlangganan", "callback_data": "sub_action:unsubscribe"}])
     keyboard.append([{"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}])
     return {"inline_keyboard": keyboard}
 
@@ -832,62 +842,116 @@ def webhook():
             answer_callback_query(token, callback_query_id)
             current_sub = db_helper.get_user_subscription(user_chat_id)
             
-            cat_titles = {
-                "deck": "🚢 Deck (Perwira & Rating)",
-                "engine": "🔧 Engine (Engineer & Rating)",
-                "housekeeping": "🧹 Housekeeping Department",
-                "fnb": "🍽 Food & Beverage Department",
-                "culinary": "🍳 Culinary Department",
-                "bar": "🍹 Bar Department",
-                "laundry": "🧺 Laundry Department",
-                "landbase": "🏨 Hotel Darat Internasional"
-            }
-            
-            sub_title = cat_titles.get(current_sub, "Belum Berlangganan")
+            if not current_sub:
+                sub_title = "Belum Berlangganan"
+            elif current_sub == "all":
+                sub_title = "✨ Semua Departemen"
+            else:
+                cat_titles = {
+                    "deck": "🚢 Deck",
+                    "engine": "🔧 Engine",
+                    "housekeeping": "🧹 Housekeeping",
+                    "fnb": "🍽 Food & Beverage",
+                    "culinary": "🍳 Culinary",
+                    "bar": "🍹 Bar",
+                    "laundry": "🧺 Laundry",
+                    "landbase": "🏨 Hotel Darat"
+                }
+                parts = [p.strip() for p in current_sub.split(",") if p.strip()]
+                sub_title = ", ".join([cat_titles.get(p, p) for p in parts])
+                
             text = (
                 f"🔔 <b>Personal Job Alerts (Langganan Loker)</b>\n\n"
                 f"Dapatkan notifikasi pesan pribadi (japri) secara otomatis dari bot ketika ada lowongan baru sesuai minat jabatan Anda!\n\n"
                 f"Status Langganan Aktif: <b>{sub_title}</b>\n\n"
-                f"Silakan klik departemen di bawah ini untuk mengaktifkan atau mengganti langganan Anda:"
+                f"Silakan ketuk departemen di bawah ini untuk memilih satu/lebih (multi-pilihan) atau pilih Semua Departemen:"
             )
             edit_telegram_message(token, user_chat_id, message_id, text, get_subscribe_markup(current_sub))
             
-        elif callback_data.startswith("sub:"):
-            sub_action = callback_data.split(":")[-1]
-            if sub_action == "unsubscribe":
-                db_helper.unsubscribe_user(user_chat_id)
-                answer_callback_query(token, callback_query_id, "Berhasil berhenti berlangganan.")
-            else:
-                db_helper.subscribe_user(user_chat_id, sub_action)
-                cat_titles = {
-                    "deck": "Deck Department",
-                    "engine": "Engine Department",
-                    "housekeeping": "Housekeeping Department",
-                    "fnb": "Food & Beverage Department",
-                    "culinary": "Culinary Department",
-                    "bar": "Bar Department",
-                    "laundry": "Laundry Department",
-                    "landbase": "Hotel Darat"
-                }
-                answer_callback_query(token, callback_query_id, f"Langganan aktif untuk {cat_titles[sub_action]}!")
-                
+        elif callback_data.startswith("sub_toggle:"):
+            category = callback_data.split(":")[-1]
+            answer_callback_query(token, callback_query_id)
+            
             current_sub = db_helper.get_user_subscription(user_chat_id)
-            cat_titles = {
-                "deck": "🚢 Deck (Perwira & Rating)",
-                "engine": "🔧 Engine (Engineer & Rating)",
-                "housekeeping": "🧹 Housekeeping Department",
-                "fnb": "🍽 Food & Beverage Department",
-                "culinary": "🍳 Culinary Department",
-                "bar": "🍹 Bar Department",
-                "laundry": "🧺 Laundry Department",
-                "landbase": "🏨 Hotel Darat Internasional"
-            }
-            sub_title = cat_titles.get(current_sub, "Belum Berlangganan")
+            
+            if not current_sub:
+                user_cats = [category]
+            elif current_sub == "all":
+                user_cats = [category]
+            else:
+                user_cats = [p.strip() for p in current_sub.split(",") if p.strip()]
+                if category in user_cats:
+                    user_cats.remove(category)
+                else:
+                    user_cats.append(category)
+                    
+            if not user_cats:
+                db_helper.unsubscribe_user(user_chat_id)
+            else:
+                db_helper.subscribe_user(user_chat_id, ",".join(user_cats))
+                
+            # Re-render subscribe menu
+            current_sub = db_helper.get_user_subscription(user_chat_id)
+            if not current_sub:
+                sub_title = "Belum Berlangganan"
+            elif current_sub == "all":
+                sub_title = "✨ Semua Departemen"
+            else:
+                cat_titles = {
+                    "deck": "🚢 Deck",
+                    "engine": "🔧 Engine",
+                    "housekeeping": "🧹 Housekeeping",
+                    "fnb": "🍽 Food & Beverage",
+                    "culinary": "🍳 Culinary",
+                    "bar": "🍹 Bar",
+                    "laundry": "🧺 Laundry",
+                    "landbase": "🏨 Hotel Darat"
+                }
+                parts = [p.strip() for p in current_sub.split(",") if p.strip()]
+                sub_title = ", ".join([cat_titles.get(p, p) for p in parts])
+                
             text = (
                 f"🔔 <b>Personal Job Alerts (Langganan Loker)</b>\n\n"
                 f"Dapatkan notifikasi pesan pribadi (japri) secara otomatis dari bot ketika ada lowongan baru sesuai minat jabatan Anda!\n\n"
                 f"Status Langganan Aktif: <b>{sub_title}</b>\n\n"
-                f"Silakan klik departemen di bawah ini untuk mengaktifkan atau mengganti langganan Anda:"
+                f"Silakan ketuk departemen di bawah ini untuk memilih satu/lebih (multi-pilihan) atau pilih Semua Departemen:"
+            )
+            edit_telegram_message(token, user_chat_id, message_id, text, get_subscribe_markup(current_sub))
+            
+        elif callback_data.startswith("sub_action:"):
+            action = callback_data.split(":")[-1]
+            answer_callback_query(token, callback_query_id)
+            
+            if action == "all":
+                db_helper.subscribe_user(user_chat_id, "all")
+            elif action == "unsubscribe":
+                db_helper.unsubscribe_user(user_chat_id)
+                
+            # Re-render subscribe menu
+            current_sub = db_helper.get_user_subscription(user_chat_id)
+            if not current_sub:
+                sub_title = "Belum Berlangganan"
+            elif current_sub == "all":
+                sub_title = "✨ Semua Departemen"
+            else:
+                cat_titles = {
+                    "deck": "🚢 Deck",
+                    "engine": "🔧 Engine",
+                    "housekeeping": "🧹 Housekeeping",
+                    "fnb": "🍽 Food & Beverage",
+                    "culinary": "🍳 Culinary",
+                    "bar": "🍹 Bar",
+                    "laundry": "🧺 Laundry",
+                    "landbase": "🏨 Hotel Darat"
+                }
+                parts = [p.strip() for p in current_sub.split(",") if p.strip()]
+                sub_title = ", ".join([cat_titles.get(p, p) for p in parts])
+                
+            text = (
+                f"🔔 <b>Personal Job Alerts (Langganan Loker)</b>\n\n"
+                f"Dapatkan notifikasi pesan pribadi (japri) secara otomatis dari bot ketika ada lowongan baru sesuai minat jabatan Anda!\n\n"
+                f"Status Langganan Aktif: <b>{sub_title}</b>\n\n"
+                f"Silakan ketuk departemen di bawah ini untuk memilih satu/lebih (multi-pilihan) atau pilih Semua Departemen:"
             )
             edit_telegram_message(token, user_chat_id, message_id, text, get_subscribe_markup(current_sub))
             

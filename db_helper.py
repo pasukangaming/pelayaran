@@ -443,10 +443,19 @@ def unsubscribe_user(chat_id):
 def get_subscribers_by_category(category):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT chat_id FROM subscribers WHERE category = ?", (category,))
+    cursor.execute("SELECT chat_id, category FROM subscribers")
     rows = cursor.fetchall()
     conn.close()
-    return [row["chat_id"] for row in rows]
+    
+    matching_chat_ids = []
+    for row in rows:
+        user_cat = row["category"]
+        if not user_cat:
+            continue
+        user_cats = [c.strip() for c in user_cat.split(",") if c.strip()]
+        if "all" in user_cats or category in user_cats:
+            matching_chat_ids.append(row["chat_id"])
+    return matching_chat_ids
 
 def get_user_subscription(chat_id):
     conn = get_db_connection()
