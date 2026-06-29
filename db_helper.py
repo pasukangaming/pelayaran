@@ -69,7 +69,9 @@ DEFAULT_AGENCIES = [
     ("Cast-A-Way Cruise Recruiting (Hospitality)", "Official International Agency", "Kapal Pesiar & Hospitality", 
          "International Recruiting Office", "info@cast-a-way.com", "https://cast-a-way.com/hospitality/"),
     ("Cast-A-Way Cruise Recruiting (F&B)", "Official International Agency", "Kapal Pesiar & Hospitality", 
-         "International Recruiting Office", "info@cast-a-way.com", "https://cast-a-way.com/fb-operations/")
+         "International Recruiting Office", "info@cast-a-way.com", "https://cast-a-way.com/fb-operations/"),
+    ("Cast-A-Way Cruise Recruiting (Spa)", "Official International Agency", "Kapal Pesiar & Hospitality", 
+         "International Recruiting Office", "info@cast-a-way.com", "https://cast-a-way.com/spa/")
 ]
 
 def get_db_connection():
