@@ -276,6 +276,7 @@ def get_settings_markup(current_interval):
         text = f"✅ {val} Jam" if str(current_interval) == val else f"{val} Jam"
         row.append({"text": text, "callback_data": f"set_interval:{val}"})
     keyboard.append(row)
+    keyboard.append([{"text": "🚨 Hapus Semua Data Loker", "callback_data": "menu_clear_jobs"}])
     keyboard.append([{"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}])
     return {"inline_keyboard": keyboard}
 
@@ -1030,8 +1031,38 @@ def webhook():
                 f"Interval aktif saat ini: <b>{hours} Jam</b>", 
                 get_settings_markup(hours)
             )
+        elif callback_data == "menu_clear_jobs":
+            answer_callback_query(token, callback_query_id)
+            text_confirm = (
+                "⚠️ <b>Konfirmasi Hapus Semua Loker</b>\n\n"
+                "Apakah Anda yakin ingin menghapus seluruh data lowongan kerja beserta riwayat pengiriman dari database?\n\n"
+                "• Tindakan ini akan mengosongkan riwayat agar bot dapat mengirim ulang loker lama sebagai loker baru pada pemindaian berikutnya.\n"
+                "• Data langganan user dan daftar agensi resmi tidak akan dihapus."
+            )
+            markup = {
+                "inline_keyboard": [
+                    [
+                        {"text": "✅ Ya, Hapus Semua", "callback_data": "clear_jobs_confirm"},
+                        {"text": "❌ Batal", "callback_data": "menu_settings"}
+                    ]
+                ]
+            }
+            edit_telegram_message(token, user_chat_id, message_id, text_confirm, markup)
             
-
+        elif callback_data == "clear_jobs_confirm":
+            db_helper.clear_all_jobs()
+            answer_callback_query(token, callback_query_id, "Data loker dibersihkan!")
+            text_success = (
+                "🚨 <b>Database Loker Berhasil Dibersihkan!</b>\n\n"
+                "Seluruh data loker dan riwayat pengiriman (logs) telah dihapus dari sistem.\n\n"
+                "Silakan klik tombol <b>Cek Loker Sekarang</b> pada menu utama jika ingin memulai pemindaian ulang dari awal."
+            )
+            markup = {
+                "inline_keyboard": [
+                    [{"text": "🔙 Kembali ke Pengaturan", "callback_data": "menu_settings"}]
+                ]
+            }
+            edit_telegram_message(token, user_chat_id, message_id, text_success, markup)
             
         elif callback_data == "menu_scrape":
             answer_callback_query(token, callback_query_id, "Scraping dimulai...")

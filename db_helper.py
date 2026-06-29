@@ -498,3 +498,12 @@ def sync_default_agencies():
     
     conn.close()
     return after - before
+
+def clear_all_jobs():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM jobs")
+    cursor.execute("DELETE FROM sent_jobs")
+    conn.commit()
+    conn.close()
+    return True
