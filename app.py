@@ -75,6 +75,9 @@ def get_main_menu_markup():
     return {
         "inline_keyboard": [
             [
+                {"text": "💼 Lowongan Per Jabatan", "callback_data": "menu_jobs"}
+            ],
+            [
                 {"text": "🏢 Daftar Agency Resmi", "callback_data": "menu_agencies"}
             ],
             [
@@ -83,6 +86,26 @@ def get_main_menu_markup():
             ],
             [
                 {"text": "🔄 Cek Loker Sekarang", "callback_data": "menu_scrape"}
+            ]
+        ]
+    }
+
+def get_jobs_menu_markup():
+    return {
+        "inline_keyboard": [
+            [
+                {"text": "🚢 Deck (Perwira & Rating)", "callback_data": "list_jobs:deck"},
+                {"text": "🔧 Engine (Engineer & Rating)", "callback_data": "list_jobs:engine"}
+            ],
+            [
+                {"text": "🍽 Steward & Galley", "callback_data": "list_jobs:galley"},
+                {"text": "🏨 Landbase Hotel", "callback_data": "list_jobs:landbase"}
+            ],
+            [
+                {"text": "🔍 Cari Posisi / Ketik Bebas", "callback_data": "menu_search_jobs"}
+            ],
+            [
+                {"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}
             ]
         ]
     }
@@ -165,6 +188,7 @@ def run_scrape_and_post(manual_trigger=False, user_chat_id=None):
     new_jobs_count = 0
     for job in reversed(jobs):
         job_id = job["id"]
+        db_helper.save_job(job)
         if not db_helper.is_job_sent(job_id):
             message = (
                 f"🚢 <b>LOWONGAN PELAUT BARU</b>\n\n"
@@ -282,6 +306,7 @@ def scrape_step():
     new_jobs_from_source = 0
     for job in reversed(jobs):
         job_id = job["id"]
+        db_helper.save_job(job)
         if not db_helper.is_job_sent(job_id):
             message = (
                 f"🚢 <b>LOWONGAN PELAUT BARU</b>\n\n"
@@ -393,6 +418,24 @@ def webhook():
                 else:
                     send_telegram_message(token, user_chat_id, "❌ Format tidak valid. Pastikan menyertakan minimal: Nama | Izin | Kategori")
                 
+            elif state == "awaiting_job_search":
+                query = text.strip()
+                jobs = db_helper.search_jobs(query)
+                
+                if jobs:
+                    text_res = f"🔍 <b>Hasil Pencarian Lowongan: '{query}'</b>\n\n"
+                    for idx, j in enumerate(jobs):
+                        text_res += f"{idx+1}. <b>{j['position']}</b>\n"
+                        text_res += f"   🏢 {j['company']} | 🛥 {j['vessel_type']}\n"
+                        text_res += f"   💵 Gaji: {j['salary']} | 📅 Join: {j['join_date']}\n"
+                        text_res += f"   🔗 <a href='{j['link']}'>Detail Loker</a>\n\n"
+                else:
+                    text_res = f"❌ Tidak ditemukan lowongan dengan kata kunci: <b>{query}</b>.\n\nCoba cari kata kunci lainnya (misal: AB, Fitter, Waiter)."
+                    
+                db_helper.set_user_state(user_chat_id, "normal")
+                send_telegram_message(token, user_chat_id, text_res, get_main_menu_markup())
+                
+            else:
                 db_helper.set_user_state(user_chat_id, "normal")
                 send_telegram_message(token, user_chat_id, "Kembali ke Menu Utama:", get_main_menu_markup())
                 
@@ -413,6 +456,70 @@ def webhook():
                 get_main_menu_markup()
             )
             db_helper.set_user_state(user_chat_id, "normal")
+            
+        elif callback_data == "menu_jobs":
+            answer_callback_query(token, callback_query_id)
+            edit_telegram_message(
+                token, 
+                user_chat_id, 
+                message_id, 
+                "💼 <b>Lowongan Per Jabatan / Pencarian Loker</b>\n\n"
+                "Pilih kategori jabatan di bawah ini atau cari posisi secara manual menggunakan kata kunci bebas:", 
+                get_jobs_menu_markup()
+            )
+            
+        elif callback_data.startswith("list_jobs:"):
+            category = callback_data.split(":")[-1]
+            answer_callback_query(token, callback_query_id)
+            
+            keywords_map = {
+                "deck": ['master', 'captain', 'mate', 'officer', 'deck', 'bosun', 'ab ', 'os ', 'cadet', 'Helmsman', 'jurumudi', 'kelasi'],
+                "engine": ['engineer', 'engine', 'oiler', 'wiper', 'fitter', 'electrician', 'motorman'],
+                "galley": ['cook', 'steward', 'messboy', 'waiter', 'chef', 'galley', 'laundry', 'utility'],
+                "landbase": ['housekeeping', 'receptionist', 'front office', 'spa ', 'hotel darat', 'butler', 'cleaner', 'landbase']
+            }
+            
+            keywords = keywords_map.get(category, [])
+            jobs = db_helper.get_jobs_by_keywords(keywords)
+            
+            category_titles = {
+                "deck": "🚢 Deck (Perwira & Rating)",
+                "engine": "🔧 Engine (Engineer & Rating)",
+                "galley": "🍽 Steward & Galley",
+                "landbase": "🏨 Landbase Hotel"
+            }
+            
+            title = category_titles.get(category, "Lowongan Kerja")
+            text = f"💼 <b>Daftar Lowongan - {title}</b>\n\n"
+            
+            if jobs:
+                for idx, j in enumerate(jobs):
+                    text += f"{idx+1}. <b>{j['position']}</b>\n"
+                    text += f"   🏢 {j['company']} | 🛥 {j['vessel_type']}\n"
+                    text += f"   💵 Gaji: {j['salary']} | 📅 Join: {j['join_date']}\n"
+                    text += f"   🔗 <a href='{j['link']}'>Detail Loker</a>\n\n"
+            else:
+                text += "❌ Saat ini belum ada lowongan aktif di database untuk kategori ini.\n\n<i>Silakan lakukan scrape data terbaru menggunakan tombol 'Cek Loker Sekarang'.</i>"
+                
+            markup = {
+                "inline_keyboard": [
+                    [{"text": "🔙 Kembali", "callback_data": "menu_jobs"}]
+                ]
+            }
+            edit_telegram_message(token, user_chat_id, message_id, text, markup)
+            
+        elif callback_data == "menu_search_jobs":
+            answer_callback_query(token, callback_query_id)
+            db_helper.set_user_state(user_chat_id, "awaiting_job_search")
+            edit_telegram_message(
+                token, 
+                user_chat_id, 
+                message_id, 
+                "🔍 <b>Cari Lowongan Bebas</b>\n\n"
+                "Silakan ketik nama jabatan atau posisi yang ingin Anda cari (misal: <code>Fitter</code>, <code>AB</code>, <code>Waiter</code>, <code>Housekeeping</code>).\n\n"
+                "<i>Bot akan menunggu input teks dari Anda...</i>",
+                {"inline_keyboard": [[{"text": "🔙 Batal", "callback_data": "menu_jobs"}]]}
+            )
             
         elif callback_data == "menu_agencies":
             answer_callback_query(token, callback_query_id)

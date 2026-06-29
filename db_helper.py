@@ -60,6 +60,21 @@ def init_db(default_token=None, default_chat_id=None):
         )
     """)
     
+    # Create jobs table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS jobs (
+            id TEXT PRIMARY KEY,
+            position TEXT,
+            vessel_type TEXT,
+            salary TEXT,
+            join_date TEXT,
+            duration TEXT,
+            company TEXT,
+            link TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
     conn.commit()
     
     # Populate default settings
@@ -252,6 +267,17 @@ def prune_sent_jobs(keep_count=500):
             LIMIT ?
         )
     """, (keep_count,))
+    
+    # Prune jobs table
+    cursor.execute("""
+        DELETE FROM jobs 
+        WHERE id NOT IN (
+            SELECT id FROM jobs 
+            ORDER BY created_at DESC 
+            LIMIT ?
+        )
+    """, (keep_count,))
+    
     conn.commit()
     conn.close()
 
@@ -300,3 +326,54 @@ def delete_agency(agency_id):
     conn.commit()
     conn.close()
     return deleted
+
+def save_job(job):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT OR REPLACE INTO jobs (id, position, vessel_type, salary, join_date, duration, company, link)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (job["id"], job["position"], job["vessel_type"], job["salary"], job["join_date"], job["duration"], job["company"], job["link"]))
+        conn.commit()
+    except Exception as e:
+        print(f"Error saving job: {e}")
+    conn.close()
+
+def search_jobs(query_str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT position, vessel_type, salary, join_date, duration, company, link 
+        FROM jobs 
+        WHERE position LIKE ? OR company LIKE ? OR vessel_type LIKE ?
+        ORDER BY created_at DESC 
+        LIMIT 10
+    """, (f"%{query_str}%", f"%{query_str}%", f"%{query_str}%"))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def get_jobs_by_keywords(keywords):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    query_parts = []
+    params = []
+    for kw in keywords:
+        query_parts.append("position LIKE ? OR vessel_type LIKE ?")
+        params.extend([f"%{kw}%", f"%{kw}%"])
+        
+    where_clause = " OR ".join(query_parts)
+    sql = f"""
+        SELECT position, vessel_type, salary, join_date, duration, company, link 
+        FROM jobs 
+        WHERE {where_clause} 
+        ORDER BY created_at DESC 
+        LIMIT 10
+    """
+    
+    cursor.execute(sql, params)
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
