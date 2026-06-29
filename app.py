@@ -361,14 +361,18 @@ def webhook():
                 token, 
                 user_chat_id, 
                 message_id, 
-                "🔄 <b>Sedang memeriksa lowongan terbaru dari 50+ sumber...</b>\n\nMohon tunggu sekitar 5-8 detik..."
+                "🔄 <b>Sedang memulai pemeriksaan lowongan...</b>\n\nMenghubungkan ke server..."
             )
             
-            success, msg = run_scrape_and_post(manual_trigger=True)
-            
-            # Show result
-            result_text = f"✅ <b>Scraping Selesai!</b>\n\nHasil: {msg}\n\nKembali ke Menu Utama:"
-            edit_telegram_message(token, user_chat_id, message_id, result_text, get_main_menu_markup())
+            import subprocess
+            import sys
+            # Start background runner process for sequential scraping with real-time progress bar
+            subprocess.Popen(
+                [sys.executable, os.path.join(os.path.dirname(__file__), "scrape_runner.py"), str(user_chat_id), str(message_id)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True
+            )
             
     return jsonify({"status": "ok"})
 
