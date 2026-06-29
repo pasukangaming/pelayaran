@@ -766,19 +766,15 @@ def webhook():
             
             category_title = "🚢 Cruise Line (SIUPPAK/P3MI)" if category == "cruise" else "🏨 Landbase Hotel (P3MI)"
             text = f"🏢 <b>Daftar Agency Resmi - {category_title}</b>\n\n"
-            text += "<i>Berikut daftar agensi berizin resmi di Indonesia (aktif di SISKOP2MI/Kemenhub). Ketuk alamat/kontak untuk menyalin.</i>\n\n"
+            text += "<i>Berikut daftar agensi berizin resmi di Indonesia (aktif di SISKOP2MI/Kemenhub). Ketuk kontak untuk menyalin.</i>\n\n"
             
             for idx, ag in enumerate(agencies):
                 text += f"{idx+1}. <b>{ag['name']}</b>\n"
                 text += f"   📄 <b>Izin:</b> {ag['license_no']}\n"
-                if ag['address']:
-                    text += f"   📍 <b>Alamat:</b> <code>{ag['address']}</code>\n"
                 if ag['contact']:
                     text += f"   📞 <b>Kontak:</b> <code>{ag['contact']}</code>\n"
                 if ag['website']:
-                    text += f"   🌐 <b>Web:</b> <a href='{ag['website']}'>{ag['name']}</a>\n"
-                if ag.get('created_at'):
-                    text += f"   📅 <b>Terdaftar:</b> <code>{ag['created_at']}</code>\n"
+                    text += f"   🌐 <b>Web:</b> <a href='{ag['website']}'>Kunjungi Website / Portal</a>\n"
                 text += "\n"
                 
             markup = {
@@ -874,20 +870,16 @@ def webhook():
                 agencies = db_helper.get_agencies_by_location(loc)
                 
             text = f"📍 <b>Daftar Agency Resmi di Wilayah: {loc}</b>\n\n"
-            text += "<i>Ketuk alamat/kontak untuk menyalin.</i>\n\n"
+            text += "<i>Ketuk kontak untuk menyalin.</i>\n\n"
             
             if agencies:
                 for idx, ag in enumerate(agencies):
                     text += f"{idx+1}. <b>{ag['name']}</b>\n"
                     text += f"   📄 <b>Izin:</b> {ag['license_no']}\n"
-                    if ag['address']:
-                        text += f"   📍 <b>Alamat:</b> <code>{ag['address']}</code>\n"
                     if ag['contact']:
                         text += f"   📞 <b>Kontak:</b> <code>{ag['contact']}</code>\n"
                     if ag['website']:
-                        text += f"   🌐 <b>Web:</b> <a href='{ag['website']}'>{ag['name']}</a>\n"
-                    if ag.get('created_at'):
-                        text += f"   📅 <b>Terdaftar:</b> <code>{ag['created_at']}</code>\n"
+                        text += f"   🌐 <b>Web:</b> <a href='{ag['website']}'>Kunjungi Website / Portal</a>\n"
                     text += "\n"
             else:
                 text += "❌ Belum ada agency terdaftar di wilayah ini."
