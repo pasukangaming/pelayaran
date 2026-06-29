@@ -126,43 +126,35 @@ def run_scrape_and_post(manual_trigger=False, user_chat_id=None):
             print(msg)
             return False, msg
             
-    print("Starting scrape of all sources...")
+    print("Starting parallel scrape of all sources...")
     sources = db_helper.get_sources()
-    new_jobs_count = 0
     
-    for src in sources:
-        jobs = []
-        if src["type"] == "built-in":
-            if src["name"] == "Crewell":
-                jobs = scrapers.scrape_crewell()
-        elif src["type"] == "rss":
-            jobs = scrapers.scrape_rss(src["url"])
-        else:
-            jobs = scrapers.scrape_generic(src["url"])
+    # Run parallel scrape via Google Apps Script Proxy
+    jobs = scrapers.scrape_all_sources_parallel(sources)
+    print(f"Parallel scrape returned {len(jobs)} total jobs.")
+    
+    new_jobs_count = 0
+    # Process new jobs
+    for job in reversed(jobs):
+        job_id = job["id"]
+        if not db_helper.is_job_sent(job_id):
+            message = (
+                f"🚢 <b>LOWONGAN PELAUT BARU</b>\n\n"
+                f"💼 <b>Posisi:</b> {scrapers.escape_html(job['position'])}\n"
+                f"🛥 <b>Jenis Kapal:</b> {scrapers.escape_html(job['vessel_type'])}\n"
+                f"💵 <b>Gaji:</b> {scrapers.escape_html(job['salary'])}\n"
+                f"📅 <b>Join Date:</b> {scrapers.escape_html(job['join_date'])}\n"
+                f"⏱ <b>Kontrak:</b> {scrapers.escape_html(job['duration'])}\n"
+                f"🏢 <b>Perusahaan:</b> {scrapers.escape_html(job['company'])}\n\n"
+                f"🔗 <a href='{job['link']}'>Detail &amp; Apply Loker</a>"
+            )
             
-        print(f"Source '{src['name']}' returned {len(jobs)} jobs.")
-        
-        # Process new jobs
-        for job in reversed(jobs):
-            job_id = job["id"]
-            if not db_helper.is_job_sent(job_id):
-                message = (
-                    f"🚢 <b>LOWONGAN PELAUT BARU</b>\n\n"
-                    f"💼 <b>Posisi:</b> {scrapers.escape_html(job['position'])}\n"
-                    f"🛥 <b>Jenis Kapal:</b> {scrapers.escape_html(job['vessel_type'])}\n"
-                    f"💵 <b>Gaji:</b> {scrapers.escape_html(job['salary'])}\n"
-                    f"📅 <b>Join Date:</b> {scrapers.escape_html(job['join_date'])}\n"
-                    f"⏱ <b>Kontrak:</b> {scrapers.escape_html(job['duration'])}\n"
-                    f"🏢 <b>Perusahaan:</b> {scrapers.escape_html(job['company'])}\n\n"
-                    f"🔗 <a href='{job['link']}'>Detail &amp; Apply Loker</a>"
-                )
+            success = send_telegram_message(token, chat_id, message)
+            if success and success.get("ok"):
+                db_helper.mark_job_as_sent(job_id)
+                new_jobs_count += 1
+                time.sleep(1) # avoid hitting Telegram rate limits
                 
-                success = send_telegram_message(token, chat_id, message)
-                if success and success.get("ok"):
-                    db_helper.mark_job_as_sent(job_id)
-                    new_jobs_count += 1
-                    time.sleep(1) # avoid hitting Telegram rate limits
-                    
     db_helper.set_setting("last_run", current_time)
     db_helper.prune_sent_jobs()
     
@@ -189,8 +181,8 @@ def home():
 
 @app.route("/run-cron", methods=["GET", "POST"])
 def run_cron():
-    threading.Thread(target=run_scrape_and_post, args=(False,)).start()
-    return jsonify({"success": True, "message": "Scraping task started in background."})
+    success, message = run_scrape_and_post(manual_trigger=False)
+    return jsonify({"success": success, "message": message})
 
 @app.route("/test-telegram")
 def test_telegram():
@@ -369,10 +361,14 @@ def webhook():
                 token, 
                 user_chat_id, 
                 message_id, 
-                "🔄 <b>Pemeriksaan loker dimulai!</b>\n\nProses ini berjalan di latar belakang karena memindai lebih dari 50 sumber bawaan secara bersamaan. Loker baru akan terkirim langsung ke channel Anda dalam beberapa menit.",
-                get_main_menu_markup()
+                "🔄 <b>Sedang memeriksa lowongan terbaru dari 50+ sumber...</b>\n\nMohon tunggu sekitar 5-8 detik..."
             )
-            threading.Thread(target=run_scrape_and_post, args=(True, user_chat_id)).start()
+            
+            success, msg = run_scrape_and_post(manual_trigger=True)
+            
+            # Show result
+            result_text = f"✅ <b>Scraping Selesai!</b>\n\nHasil: {msg}\n\nKembali ke Menu Utama:"
+            edit_telegram_message(token, user_chat_id, message_id, result_text, get_main_menu_markup())
             
     return jsonify({"status": "ok"})
 

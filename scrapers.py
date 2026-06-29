@@ -29,20 +29,13 @@ def get_html_content(url):
         print(f"Error fetching {url}: {e}")
         return None
 
-def scrape_crewell():
-    url = "https://crewell.net/en/vacancies/"
-    print("Scraping Crewell vacancies...")
-    html_text = get_html_content(url)
-    if not html_text:
-        return []
-        
+def parse_crewell_html(html_text):
     soup = BeautifulSoup(html_text, 'html.parser')
     vacancy_items = soup.find_all(class_='vacancy-item')
     jobs = []
     
     for item in vacancy_items:
         try:
-            # Title & Vessel Type
             title_tag = item.find('a', class_='vacancyTitle')
             if not title_tag:
                 continue
@@ -106,112 +99,134 @@ def scrape_crewell():
             
     return jobs
 
-def scrape_rss(url):
-    print(f"Scraping RSS feed: {url}")
-    html_text = get_html_content(url)
-    if not html_text:
-        return []
+def parse_rss_html(html_text):
+    soup = BeautifulSoup(html_text, 'xml')
+    items = soup.find_all('item')
+    if not items:
+        items = soup.find_all('entry')
         
-    try:
-        # Parse XML
-        soup = BeautifulSoup(html_text, 'xml')
-        items = soup.find_all('item')
+    jobs = []
+    for item in items:
+        title_tag = item.find('title')
+        link_tag = item.find('link')
         
-        # Fallback to Atom entries if no RSS items
-        if not items:
-            items = soup.find_all('entry')
+        title = title_tag.get_text(strip=True) if title_tag else "New Vacancy"
+        link = ""
+        if link_tag:
+            link = link_tag.get('href') or link_tag.get_text(strip=True)
+        
+        if not link:
+            continue
             
-        jobs = []
-        for item in items:
-            title_tag = item.find('title')
-            link_tag = item.find('link')
+        job_id = f"rss_{hashlib.md5(link.encode('utf-8')).hexdigest()[:10]}"
+        desc_tag = item.find('description') or item.find('summary')
+        desc = ""
+        if desc_tag:
+            desc_soup = BeautifulSoup(desc_tag.get_text(), 'html.parser')
+            desc = desc_soup.get_text(separator=' ', strip=True)
+            desc = desc[:150] + "..." if len(desc) > 150 else desc
             
-            title = title_tag.get_text(strip=True) if title_tag else "New Vacancy"
+        jobs.append({
+            "id": job_id,
+            "position": title,
+            "vessel_type": "Lihat Detail",
+            "salary": "Hubungi Perusahaan",
+            "join_date": "Lihat Detail",
+            "duration": "Sesuai Kontrak",
+            "company": desc if desc else "Sumber RSS Eksternal",
+            "link": link
+        })
+    return jobs
+
+def parse_generic_html(html_text, base_url):
+    soup = BeautifulSoup(html_text, 'html.parser')
+    links = soup.find_all('a')
+    jobs = []
+    seen_hrefs = set()
+    keywords = ['job', 'vacancy', 'loker', 'career', 'detail', 'apply', 'pelaut', 'crew', 'rekrut']
+    
+    for a in links:
+        href = a.get('href', '')
+        text = a.get_text(separator=' ', strip=True)
+        if not href or len(text) < 5 or len(text) > 100:
+            continue
             
-            # Link extraction can be direct text or href attribute (Atom)
-            link = ""
-            if link_tag:
-                link = link_tag.get('href') or link_tag.get_text(strip=True)
-            
-            if not link:
+        href_lower = href.lower()
+        text_lower = text.lower()
+        
+        is_job = any(kw in href_lower or kw in text_lower for kw in keywords)
+        if is_job:
+            full_href = urllib.parse.urljoin(base_url, href)
+            if not full_href.startswith('http'):
                 continue
-                
-            # MD5 hash of link as unique ID
-            job_id = f"rss_{hashlib.md5(link.encode('utf-8')).hexdigest()[:10]}"
+            if full_href in seen_hrefs:
+                continue
+            seen_hrefs.add(full_href)
             
-            # Try to get company or description details if available
-            desc_tag = item.find('description') or item.find('summary')
-            desc = ""
-            if desc_tag:
-                desc_soup = BeautifulSoup(desc_tag.get_text(), 'html.parser')
-                desc = desc_soup.get_text(separator=' ', strip=True)
-                desc = desc[:150] + "..." if len(desc) > 150 else desc
-                
+            job_id = f"gen_{hashlib.md5(full_href.encode('utf-8')).hexdigest()[:10]}"
             jobs.append({
                 "id": job_id,
-                "position": title,
+                "position": text,
                 "vessel_type": "Lihat Detail",
                 "salary": "Hubungi Perusahaan",
                 "join_date": "Lihat Detail",
                 "duration": "Sesuai Kontrak",
-                "company": desc if desc else "Sumber RSS Eksternal",
-                "link": link
+                "company": urllib.parse.urlparse(base_url).netloc,
+                "link": full_href
             })
-        return jobs
-    except Exception as e:
-        print(f"Error parsing RSS {url}: {e}")
-        return []
+    return jobs
+
+def scrape_crewell():
+    html = get_html_content("https://crewell.net/en/vacancies/")
+    return parse_crewell_html(html) if html else []
+
+def scrape_rss(url):
+    html = get_html_content(url)
+    return parse_rss_html(html) if html else []
 
 def scrape_generic(url):
-    print(f"Scraping web page generically: {url}")
-    html_text = get_html_content(url)
-    if not html_text:
-        return []
+    html = get_html_content(url)
+    return parse_generic_html(html, url) if html else []
+
+def scrape_all_sources_parallel(sources):
+    proxy_url = db_helper.get_setting("google_proxy_url")
+    urls = [src["url"] for src in sources]
+    
+    html_mapping = {}
+    if proxy_url and len(urls) > 0:
+        print(f"Fetching {len(urls)} URLs in parallel via Google Apps Script Proxy...")
+        try:
+            response = requests.post(proxy_url, json={"urls": urls}, timeout=45)
+            response.raise_for_status()
+            html_mapping = response.json()
+        except Exception as e:
+            print(f"Error fetching parallel URLs: {e}")
+            html_mapping = {}
+            
+    all_jobs = []
+    for src in sources:
+        url = src["url"]
+        html_text = html_mapping.get(url)
         
-    try:
-        soup = BeautifulSoup(html_text, 'html.parser')
-        links = soup.find_all('a')
+        # Fallback to direct fetch if not returned by parallel call
+        if not html_text:
+            print(f"Fallback to direct fetch for: {url}")
+            html_text = get_html_content(url)
+            
+        if not html_text or "Error: " in html_text[:15]:
+            continue
+            
         jobs = []
-        seen_hrefs = set()
+        try:
+            if src["type"] == "built-in" and src["name"] == "Crewell":
+                jobs = parse_crewell_html(html_text)
+            elif src["type"] == "rss":
+                jobs = parse_rss_html(html_text)
+            else:
+                jobs = parse_generic_html(html_text, url)
+        except Exception as e:
+            print(f"Error parsing source {src['name']}: {e}")
+            
+        all_jobs.extend(jobs)
         
-        keywords = ['job', 'vacancy', 'loker', 'career', 'detail', 'apply', 'pelaut', 'crew', 'rekrut']
-        
-        for a in links:
-            href = a.get('href', '')
-            text = a.get_text(separator=' ', strip=True)
-            
-            if not href or len(text) < 5 or len(text) > 100:
-                continue
-                
-            href_lower = href.lower()
-            text_lower = text.lower()
-            
-            # Simple heuristic: link or text contains job keywords
-            is_job = any(kw in href_lower or kw in text_lower for kw in keywords)
-            
-            if is_job:
-                # Resolve relative url
-                full_href = urllib.parse.urljoin(url, href)
-                if not full_href.startswith('http'):
-                    continue
-                    
-                if full_href in seen_hrefs:
-                    continue
-                seen_hrefs.add(full_href)
-                
-                job_id = f"gen_{hashlib.md5(full_href.encode('utf-8')).hexdigest()[:10]}"
-                
-                jobs.append({
-                    "id": job_id,
-                    "position": text,
-                    "vessel_type": "Lihat Detail",
-                    "salary": "Hubungi Perusahaan",
-                    "join_date": "Lihat Detail",
-                    "duration": "Sesuai Kontrak",
-                    "company": urllib.parse.urlparse(url).netloc,
-                    "link": full_href
-                })
-        return jobs
-    except Exception as e:
-        print(f"Error in generic scraper for {url}: {e}")
-        return []
+    return all_jobs
