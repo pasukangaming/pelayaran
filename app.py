@@ -1,7 +1,8 @@
 import os
 import time
 import requests
-import threading
+import json
+import urllib.parse
 from flask import Flask, request, jsonify
 from bs4 import BeautifulSoup
 
@@ -97,7 +98,6 @@ def get_settings_markup(current_interval):
 def get_sources_markup(sources):
     keyboard = []
     for src in sources:
-        # Allow delete button only for non-built-in sources
         if src["type"] != "built-in":
             keyboard.append([
                 {"text": f"❌ Hapus {src['name'][:20]}...", "callback_data": f"delete_source:{src['id']}"}
@@ -108,7 +108,7 @@ def get_sources_markup(sources):
     ])
     return {"inline_keyboard": keyboard}
 
-# Business Logic for Scraper
+# Business Logic for Scraper (Used by Cron)
 def run_scrape_and_post(manual_trigger=False, user_chat_id=None):
     token, chat_id = get_bot_credentials()
     if not token or not chat_id:
@@ -134,7 +134,6 @@ def run_scrape_and_post(manual_trigger=False, user_chat_id=None):
     print(f"Parallel scrape returned {len(jobs)} total jobs.")
     
     new_jobs_count = 0
-    # Process new jobs
     for job in reversed(jobs):
         job_id = job["id"]
         if not db_helper.is_job_sent(job_id):
@@ -184,42 +183,120 @@ def run_cron():
     success, message = run_scrape_and_post(manual_trigger=False)
     return jsonify({"success": success, "message": message})
 
-@app.route("/test-telegram")
-def test_telegram():
-    token = db_helper.get_setting("telegram_bot_token")
-    if not token:
-        return jsonify({"status": "error", "message": "No token configured"})
+@app.route("/scrape-step")
+def scrape_step():
+    index = int(request.args.get("index", 0))
+    user_chat_id = request.args.get("user_chat_id")
+    message_id = request.args.get("message_id")
     
-    # Try official with default connection
-    official_default = "error"
+    token, chat_id = get_bot_credentials()
+    if not token or not chat_id:
+        return jsonify({"status": "error", "message": "Credentials missing"})
+        
+    sources = db_helper.get_sources()
+    total_sources = len(sources)
+    
+    # Load state from DB
     try:
-        r = requests.get(f"https://api.telegram.org/bot{token}/getMe", timeout=3)
-        official_default = f"success: {r.status_code}"
-    except Exception as e:
-        official_default = str(e)[:100]
+        results_summary = json.loads(db_helper.get_setting("scrape_state_results", "[]"))
+        new_jobs_total = int(db_helper.get_setting("scrape_state_new_jobs", "0"))
+    except Exception:
+        results_summary = []
+        new_jobs_total = 0
         
-    # Try forcing IPv4
-    official_ipv4 = "error"
+    if index >= total_sources:
+        # Finished! Send summary
+        summary_text = "\n".join(results_summary)
+        final_text = (
+            f"✅ <b>Pemeriksaan Loker Selesai!</b>\n\n"
+            f"📋 <b>Hasil Ringkasan Pemindaian:</b>\n"
+            f"{summary_text if summary_text else '• Semua sumber bersih/tidak ada loker baru.'}\n\n"
+            f"🎉 <b>Total Loker Baru Terkirim: {new_jobs_total}</b>"
+        )
+        
+        edit_telegram_message(token, user_chat_id, message_id, final_text, get_main_menu_markup())
+        db_helper.set_setting("last_run", int(time.time()))
+        db_helper.prune_sent_jobs()
+        return jsonify({"status": "finished"})
+        
+    # Update progress in Telegram
+    src = sources[index]
+    progress = int((index / total_sources) * 100)
+    filled = int(progress / 10)
+    bar = "▓" * filled + "░" * (10 - filled)
+    
+    progress_text = (
+        f"🔄 <b>Sedang Memindai Lowongan Pelaut...</b>\n\n"
+        f"<code>[{bar}] {progress}% ({index}/{total_sources})</code>\n"
+        f"Memindai: <b>{src['name']}</b>...\n\n"
+        f"<i>Proses pemindaian dilakukan 1 per 1 agar tidak bentrok. Mohon tunggu...</i>"
+    )
+    edit_telegram_message(token, user_chat_id, message_id, progress_text)
+    
+    # Scrape the current source
+    jobs = []
     try:
-        import urllib3.util.connection as urllib3_cn
-        import socket
-        
-        # Patch to force IPv4
-        original_gai = urllib3_cn.allowed_gai_family
-        urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
-        
-        r = requests.get(f"https://api.telegram.org/bot{token}/getMe", timeout=3)
-        official_ipv4 = f"success: {r.status_code}"
-        
-        # Restore original
-        urllib3_cn.allowed_gai_family = original_gai
+        if src["type"] == "built-in":
+            if src["name"] == "Crewell":
+                jobs = scrapers.scrape_crewell()
+            elif src["name"] == "JobMarineMan":
+                pass
+            else:
+                jobs = scrapers.scrape_generic(src["url"])
+        elif src["type"] == "rss":
+            jobs = scrapers.scrape_rss(src["url"])
+        else:
+            jobs = scrapers.scrape_generic(src["url"])
     except Exception as e:
-        official_ipv4 = str(e)[:100]
+        print(f"Error scraping {src['name']}: {e}")
         
-    return jsonify({
-        "official_default": official_default,
-        "official_ipv4_forced": official_ipv4
-    })
+    new_jobs_from_source = 0
+    for job in reversed(jobs):
+        job_id = job["id"]
+        if not db_helper.is_job_sent(job_id):
+            message = (
+                f"🚢 <b>LOWONGAN PELAUT BARU</b>\n\n"
+                f"💼 <b>Posisi:</b> {scrapers.escape_html(job['position'])}\n"
+                f"🛥 <b>Jenis Kapal:</b> {scrapers.escape_html(job['vessel_type'])}\n"
+                f"💵 <b>Gaji:</b> {scrapers.escape_html(job['salary'])}\n"
+                f"📅 <b>Join Date:</b> {scrapers.escape_html(job['join_date'])}\n"
+                f"⏱ <b>Kontrak:</b> {scrapers.escape_html(job['duration'])}\n"
+                f"🏢 <b>Perusahaan:</b> {scrapers.escape_html(job['company'])}\n\n"
+                f"🔗 <a href='{job['link']}'>Detail &amp; Apply Loker</a>"
+            )
+            success = send_telegram_message(token, chat_id, message)
+            if success and success.get("ok"):
+                db_helper.mark_job_as_sent(job_id)
+                new_jobs_from_source += 1
+                time.sleep(1)
+                
+    # Update state
+    if len(jobs) > 0:
+        results_summary.append(f"• <b>{src['name']}</b>: {len(jobs)} loker ({new_jobs_from_source} baru)")
+        new_jobs_total += new_jobs_from_source
+        db_helper.set_setting("scrape_state_results", json.dumps(results_summary))
+        db_helper.set_setting("scrape_state_new_jobs", str(new_jobs_total))
+        
+    # Trigger next step via HTTP request to ourselves (non-blocking) via Google Apps Script Proxy to bypass PythonAnywhere sandbox blocking
+    host = request.host
+    if not host:
+        host = "amanputradewa.pythonanywhere.com"
+        
+    target_url = f"https://{host}/scrape-step?index={index+1}&user_chat_id={user_chat_id}&message_id={message_id}"
+    proxy_url = db_helper.get_setting("google_proxy_url")
+    
+    if proxy_url:
+        next_url = f"{proxy_url}?url={urllib.parse.quote(target_url)}"
+    else:
+        next_url = target_url
+        
+    try:
+        requests.get(next_url, timeout=0.5)
+    except requests.exceptions.RequestException:
+        pass
+        
+    return jsonify({"status": "in_progress", "index": index})
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
@@ -230,14 +307,12 @@ def webhook():
     if not token:
         return "Bot not configured", 200
         
-    # Handle incoming messages
     if "message" in data:
         message_data = data["message"]
         chat = message_data["chat"]
         user_chat_id = chat["id"]
         text = message_data.get("text", "").strip()
         
-        # Auto-detect target group/channel Chat ID
         if chat["type"] in ["group", "supergroup", "channel"]:
             db_helper.set_setting("telegram_chat_id", user_chat_id)
             token, chat_id = get_bot_credentials()
@@ -258,7 +333,6 @@ def webhook():
             state = db_helper.get_user_state(user_chat_id)
             if state == "awaiting_source_url":
                 if text.startswith("http://") or text.startswith("https://"):
-                    # Validate URL
                     success = db_helper.add_source(name=text, url=text, s_type="rss")
                     if success:
                         send_telegram_message(token, user_chat_id, "✅ Sumber baru berhasil ditambahkan ke database!")
@@ -267,11 +341,9 @@ def webhook():
                 else:
                     send_telegram_message(token, user_chat_id, "❌ Format URL tidak valid. Harus diawali dengan http:// atau https://")
                 
-                # Reset State
                 db_helper.set_user_state(user_chat_id, "normal")
                 send_telegram_message(token, user_chat_id, "Kembali ke Menu Utama:", get_main_menu_markup())
                 
-    # Handle Callback Queries (clicks on Inline Buttons)
     elif "callback_query" in data:
         callback_query = data["callback_query"]
         callback_query_id = callback_query["id"]
@@ -348,7 +420,6 @@ def webhook():
             else:
                 answer_callback_query(token, callback_query_id, "Gagal menghapus (Sumber Bawaan tidak bisa dihapus).")
                 
-            # Reload sources menu
             sources = db_helper.get_sources()
             text_sources = "📋 <b>Daftar Sumber Loker Aktif:</b>\n\n"
             for idx, src in enumerate(sources):
@@ -364,31 +435,30 @@ def webhook():
                 "🔄 <b>Sedang memulai pemeriksaan lowongan...</b>\n\nMenghubungkan ke server..."
             )
             
-            import subprocess
-            import sys
+            # Reset state in DB
+            db_helper.set_setting("scrape_state_results", "[]")
+            db_helper.set_setting("scrape_state_new_jobs", "0")
             
-            # Redirect stdout and stderr to files for debugging
-            log_dir = os.path.dirname(__file__)
+            # Trigger first step (index 0) via Google Apps Script Proxy to bypass PythonAnywhere sandbox blocking
+            host = request.host
+            if not host:
+                host = "amanputradewa.pythonanywhere.com"
+                
+            target_url = f"https://{host}/scrape-step?index=0&user_chat_id={user_chat_id}&message_id={message_id}"
+            proxy_url = db_helper.get_setting("google_proxy_url")
+            
+            if proxy_url:
+                next_url = f"{proxy_url}?url={urllib.parse.quote(target_url)}"
+            else:
+                next_url = target_url
+                
             try:
-                stdout_log = open(os.path.join(log_dir, "runner_stdout.log"), "w")
-                stderr_log = open(os.path.join(log_dir, "runner_stderr.log"), "w")
-            except Exception as e:
-                stdout_log = subprocess.DEVNULL
-                stderr_log = subprocess.DEVNULL
-                print(f"Error opening log files: {e}")
-            
-            # Start background runner process for sequential scraping with real-time progress bar
-            subprocess.Popen(
-                [sys.executable, os.path.join(log_dir, "scrape_runner.py"), str(user_chat_id), str(message_id)],
-                stdout=stdout_log,
-                stderr=stderr_log,
-                cwd=log_dir,
-                start_new_session=True
-            )
+                requests.get(next_url, timeout=0.5)
+            except requests.exceptions.RequestException:
+                pass
             
     return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
-    # Local run config
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
