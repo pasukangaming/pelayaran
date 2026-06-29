@@ -178,6 +178,28 @@ def run_cron():
     success, message = run_scrape_and_post(manual_trigger=False)
     return jsonify({"success": success, "message": message})
 
+@app.route("/test-telegram")
+def test_telegram():
+    token = db_helper.get_setting("telegram_bot_token")
+    if not token:
+        return jsonify({"status": "error", "message": "No token configured"})
+    
+    url = f"https://api.telegram.org/bot{token}/getMe"
+    try:
+        start_time = time.time()
+        response = requests.get(url, timeout=5)
+        elapsed = time.time() - start_time
+        return jsonify({
+            "status": "success",
+            "elapsed_seconds": elapsed,
+            "response": response.json()
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        })
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
