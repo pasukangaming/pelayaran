@@ -184,21 +184,33 @@ def test_telegram():
     if not token:
         return jsonify({"status": "error", "message": "No token configured"})
     
-    url = f"https://api.telegram-proxy.org/bot{token}/getMe"
-    try:
-        start_time = time.time()
-        response = requests.get(url, timeout=5)
-        elapsed = time.time() - start_time
-        return jsonify({
-            "status": "success",
-            "elapsed_seconds": elapsed,
-            "response": response.json()
-        })
-    except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        })
+    mirrors = {
+        "official": "https://api.telegram.org",
+        "tgproxy_pa": "https://tgproxy.pythonanywhere.com",
+        "tapi_radiy": "https://tapi.radiy.tk",
+        "del_dog": "https://tg.del.dog",
+        "telegg_ru": "https://telegg.ru"
+    }
+    
+    results = {}
+    for name, base_url in mirrors.items():
+        url = f"{base_url}/bot{token}/getMe"
+        try:
+            start_time = time.time()
+            response = requests.get(url, timeout=4)
+            elapsed = time.time() - start_time
+            results[name] = {
+                "status": "success",
+                "elapsed": f"{elapsed:.2f}s",
+                "ok": response.json().get("ok")
+            }
+        except Exception as e:
+            results[name] = {
+                "status": "error",
+                "message": str(e)[:100]
+            }
+            
+    return jsonify(results)
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
