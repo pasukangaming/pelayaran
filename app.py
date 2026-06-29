@@ -109,7 +109,7 @@ def get_sources_markup(sources):
     return {"inline_keyboard": keyboard}
 
 # Business Logic for Scraper
-def run_scrape_and_post(manual_trigger=False):
+def run_scrape_and_post(manual_trigger=False, user_chat_id=None):
     token, chat_id = get_bot_credentials()
     if not token or not chat_id:
         print("Scraper skipped: Telegram bot token or chat ID is missing.")
@@ -165,6 +165,16 @@ def run_scrape_and_post(manual_trigger=False):
                     
     db_helper.set_setting("last_run", current_time)
     db_helper.prune_sent_jobs()
+    
+    if manual_trigger and user_chat_id:
+        send_telegram_message(
+            token, 
+            user_chat_id, 
+            f"✅ <b>Pemeriksaan Loker Selesai!</b>\n\n"
+            f"Telah memindai {len(sources)} sumber loker.\n"
+            f"Hasil: Menemukan <b>{new_jobs_count} loker baru</b>."
+        )
+        
     return True, f"Scraping selesai. Menemukan {new_jobs_count} loker baru."
 
 @app.route("/")
@@ -362,7 +372,7 @@ def webhook():
                 "🔄 <b>Pemeriksaan loker dimulai!</b>\n\nProses ini berjalan di latar belakang karena memindai lebih dari 50 sumber bawaan secara bersamaan. Loker baru akan terkirim langsung ke channel Anda dalam beberapa menit.",
                 get_main_menu_markup()
             )
-            threading.Thread(target=run_scrape_and_post, args=(True,)).start()
+            threading.Thread(target=run_scrape_and_post, args=(True, user_chat_id)).start()
             
     return jsonify({"status": "ok"})
 
