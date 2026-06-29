@@ -1214,6 +1214,18 @@ def webhook():
             
     return jsonify({"status": "ok"})
 
+@app.route("/clear-all-agencies")
+def clear_all_agencies_route():
+    try:
+        conn = db_helper.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM agencies")
+        conn.commit()
+        conn.close()
+        return "Tabel agensi berhasil dikosongkan!"
+    except Exception as e:
+        return f"Gagal mengosongkan tabel agensi: {str(e)}"
+
 @app.route("/debug-log")
 def debug_log():
     info = {}
