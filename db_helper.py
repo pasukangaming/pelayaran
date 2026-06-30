@@ -126,10 +126,12 @@ DEFAULT_AGENCIES = [
 ]
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH, timeout=30.0)
+    conn = sqlite3.connect(DB_PATH, timeout=10.0)
     conn.row_factory = sqlite3.Row
     try:
         conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA synchronous=NORMAL;")
+        conn.execute("PRAGMA cache_size=2000;")
     except Exception:
         pass
     return conn
@@ -266,15 +268,21 @@ def init_db(default_token=None, default_chat_id=None):
     conn.close()
     print("Database initialized successfully.")
 
+# In-memory cache for settings (avoid DB hit on every API call)
+_settings_cache = {}
+
 def get_setting(key, default=None):
+    if key in _settings_cache:
+        return _settings_cache[key]
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT value FROM settings WHERE key = ?", (key,))
     row = cursor.fetchone()
     conn.close()
-    if row:
-        return row["value"]
-    return default
+    val = row["value"] if row else default
+    if val is not None:
+        _settings_cache[key] = val
+    return val
 
 def set_setting(key, value):
     conn = get_db_connection()
@@ -282,6 +290,12 @@ def set_setting(key, value):
     cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, str(value)))
     conn.commit()
     conn.close()
+    # Update cache immediately
+    _settings_cache[key] = str(value)
+
+def invalidate_settings_cache():
+    """Call this after bulk settings changes."""
+    _settings_cache.clear()
 
 def get_sources():
     conn = get_db_connection()

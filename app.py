@@ -1,5 +1,6 @@
 import os
 import time
+import threading
 import requests
 import json
 import urllib.parse
@@ -19,11 +20,22 @@ db_helper.init_db(default_token=BOT_TOKEN, default_chat_id=CHAT_ID)
 if PROXY_URL:
     db_helper.set_setting("google_proxy_url", PROXY_URL)
 
-# Helper function to get config
+# In-memory credential cache to avoid repeated DB hits per request
+_cred_cache = {}
+
 def get_bot_credentials():
+    if _cred_cache.get("token") and _cred_cache.get("chat_id"):
+        return _cred_cache["token"], _cred_cache["chat_id"]
     token = db_helper.get_setting("telegram_bot_token")
     chat_id = db_helper.get_setting("telegram_chat_id")
+    if token:
+        _cred_cache["token"] = token
+    if chat_id:
+        _cred_cache["chat_id"] = chat_id
     return token, chat_id
+
+def invalidate_cred_cache():
+    _cred_cache.clear()
 def categorize_job(position):
     pos_lower = position.lower()
     deck_kws = ['master', 'captain', 'mate', 'officer', 'deck', 'bosun', 'ab ', 'os ', 'cadet', 'helmsman', 'jurumudi', 'kelasi']
@@ -77,7 +89,7 @@ def call_telegram_api(method, payload):
         target_url = telegram_url
         
     try:
-        response = requests.get(target_url, timeout=5.0)
+        response = requests.get(target_url, timeout=3.0)
         return response.json()
     except Exception as e:
         print(f"Error calling Telegram API ({method}) via proxy: {e}")
@@ -112,12 +124,13 @@ def edit_telegram_message(token, chat_id, message_id, text, reply_markup=None):
     return call_telegram_api("editMessageText", payload)
 
 def answer_callback_query(token, callback_query_id, text=None):
-    payload = {
-        "callback_query_id": callback_query_id
-    }
-    if text:
-        payload["text"] = text
-    return call_telegram_api("answerCallbackQuery", payload)
+    """Fire-and-forget: runs in background thread to not block main response."""
+    def _do():
+        payload = {"callback_query_id": callback_query_id}
+        if text:
+            payload["text"] = text
+        call_telegram_api("answerCallbackQuery", payload)
+    threading.Thread(target=_do, daemon=True).start()
 
 # Menu Markups
 def get_main_menu_markup():
