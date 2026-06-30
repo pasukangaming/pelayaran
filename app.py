@@ -40,7 +40,7 @@ def categorize_job(position):
     pos_lower = position.lower()
     deck_kws = ['master', 'captain', 'mate', 'officer', 'deck', 'bosun', 'ab ', 'os ', 'cadet', 'helmsman', 'jurumudi', 'kelasi']
     engine_kws = ['engineer', 'engine', 'oiler', 'wiper', 'fitter', 'electrician', 'motorman']
-    hk_kws = ['housekeeping', 'cabin steward', 'cabin attendant', 'cleaner', 'hk ', 'room boy', 'hk assistant']
+    hk_kws = ['housekeeping', 'stateroom steward', 'stateroom attendant', 'room steward', 'cabin steward', 'stateroom host', 'public area host', 'laundry host', 'utility cleaner', 'rooms division', 'cleaner', 'hk ', 'room boy', 'cabin attendant', 'housekeeper']
     fnb_kws = ['waiter', 'waitress', 'restaurant steward', 'buffet steward', 'wine steward', 'messboy', 'f&b', 'food & beverage']
     culinary_kws = ['cook', 'chef', 'galley', 'culinary', 'commis', 'baker', 'pastry', 'butcher', 'cook helper', 'demi chef']
     bar_kws = ['bar ', 'bartender', 'bar utility', 'bar steward', 'bar boy', 'bar keep']
@@ -691,7 +691,7 @@ def webhook():
             keywords_map = {
                 "deck": ['master', 'captain', 'mate', 'officer', 'deck', 'bosun', 'ab ', 'os ', 'cadet', 'Helmsman', 'jurumudi', 'kelasi'],
                 "engine": ['engineer', 'engine', 'oiler', 'wiper', 'fitter', 'electrician', 'motorman'],
-                "housekeeping": ['housekeeping', 'cabin steward', 'cabin attendant', 'cleaner', 'hk ', 'room boy', 'hk assistant'],
+                "housekeeping": ['housekeeping', 'stateroom steward', 'stateroom attendant', 'room steward', 'cabin steward', 'stateroom host', 'public area host', 'laundry host', 'utility cleaner', 'rooms division', 'cleaner', 'hk ', 'room boy', 'cabin attendant', 'housekeeper'],
                 "fnb": ['waiter', 'waitress', 'restaurant steward', 'buffet steward', 'wine steward', 'messboy', 'f&b', 'food & beverage'],
                 "culinary": ['cook', 'chef', 'galley', 'culinary', 'commis', 'baker', 'pastry', 'butcher', 'cook helper', 'demi chef'],
                 "bar": ['bar ', 'bartender', 'bar utility', 'bar steward', 'bar boy', 'bar keep'],
