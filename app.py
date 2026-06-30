@@ -144,14 +144,11 @@ def get_main_menu_markup():
                 {"text": "🔔 Langganan Loker", "callback_data": "menu_subscribe"}
             ],
             [
-                {"text": "📄 Tips & Template CV", "callback_data": "menu_cv"},
-                {"text": "📊 Statistik Bot", "callback_data": "menu_stats"}
-            ],
-            [
-                {"text": "⚙️ Atur Interval", "callback_data": "menu_settings"},
+                {"text": "📊 Statistik Bot", "callback_data": "menu_stats"},
                 {"text": "🔄 Cek Loker Sekarang", "callback_data": "menu_scrape"}
             ],
             [
+                {"text": "⚙️ Atur Interval", "callback_data": "menu_settings"},
                 {"text": "📢 Bagikan Bot", "callback_data": "menu_share"}
             ]
         ]
