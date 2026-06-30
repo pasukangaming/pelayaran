@@ -36,6 +36,43 @@ def get_bot_credentials():
 
 def invalidate_cred_cache():
     _cred_cache.clear()
+
+def is_user_admin(token, user_chat_id):
+    # 1. Check if owner_admin_id setting matches
+    admin_id = db_helper.get_setting("owner_admin_id")
+    if admin_id and str(user_chat_id) == str(admin_id):
+        return True
+        
+    # 2. Check if user_chat_id matches the environment CHAT_ID
+    env_chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if env_chat_id and str(user_chat_id) == str(env_chat_id):
+        db_helper.set_setting("owner_admin_id", str(user_chat_id))
+        db_helper.invalidate_settings_cache()
+        return True
+        
+    # 3. If owner_admin_id is not set, set the first private chat user as admin
+    if not admin_id and str(user_chat_id).strip() and not str(user_chat_id).startswith("-"):
+        db_helper.set_setting("owner_admin_id", str(user_chat_id))
+        db_helper.invalidate_settings_cache()
+        return True
+        
+    # 4. If target chat is a group, check if user is admin in that group
+    target_group_id = db_helper.get_setting("telegram_chat_id")
+    if target_group_id and str(target_group_id).startswith("-"):
+        try:
+            payload = {
+                "chat_id": target_group_id,
+                "user_id": user_chat_id
+            }
+            res = call_telegram_api("getChatMember", payload)
+            if res and res.get("ok"):
+                status = res["result"].get("status")
+                if status in ["creator", "administrator"]:
+                    return True
+        except Exception as e:
+            print(f"Error checking group admin status: {e}")
+            
+    return False
 def categorize_job(position):
     pos_lower = position.lower()
     deck_kws = ['master', 'captain', 'mate', 'officer', 'deck', 'bosun', 'ab ', 'os ', 'cadet', 'helmsman', 'jurumudi', 'kelasi']
@@ -123,12 +160,14 @@ def edit_telegram_message(token, chat_id, message_id, text, reply_markup=None):
         payload["reply_markup"] = reply_markup
     return call_telegram_api("editMessageText", payload)
 
-def answer_callback_query(token, callback_query_id, text=None):
+def answer_callback_query(token, callback_query_id, text=None, show_alert=False):
     """Fire-and-forget: runs in background thread to not block main response."""
     def _do():
         payload = {"callback_query_id": callback_query_id}
         if text:
             payload["text"] = text
+        if show_alert:
+            payload["show_alert"] = True
         call_telegram_api("answerCallbackQuery", payload)
     threading.Thread(target=_do, daemon=True).start()
 
@@ -675,7 +714,10 @@ def webhook():
             
         else:
             state = db_helper.get_user_state(user_chat_id)
-            if state == "awaiting_agency_data":
+            if state in ["awaiting_agency_data", "awaiting_custom_interval"] and not is_user_admin(token, user_chat_id):
+                db_helper.set_user_state(user_chat_id, "normal")
+                send_telegram_message(token, user_chat_id, "❌ Akses Ditolak: Anda bukan Administrator Bot.", get_main_menu_markup())
+            elif state == "awaiting_agency_data":
                 parts = [p.strip() for p in text.split("|")]
                 if len(parts) >= 3:
                     name = parts[0]
@@ -755,6 +797,23 @@ def webhook():
         message_id = callback_query["message"]["message_id"]
         callback_data = callback_query["data"]
         
+        # Check admin credentials
+        admin_callbacks = [
+            "menu_scrape", "menu_settings", "menu_custom_interval", 
+            "menu_add_agency", "menu_add_agency_manual", "menu_add_agency_auto",
+            "menu_delete_agency_list", "menu_clear_jobs", "clear_jobs_confirm"
+        ]
+        is_admin_req = callback_data in admin_callbacks or callback_data.startswith("set_interval_min:") or callback_data.startswith("delete_agency:")
+        
+        if is_admin_req and not is_user_admin(token, user_chat_id):
+            answer_callback_query(
+                token, 
+                callback_query_id, 
+                text="❌ Akses Ditolak: Fitur ini hanya dapat diakses oleh Administrator Bot.", 
+                show_alert=True
+            )
+            return jsonify({"status": "forbidden"})
+            
         if callback_data == "menu_main":
             answer_callback_query(token, callback_query_id)
             edit_telegram_message(
