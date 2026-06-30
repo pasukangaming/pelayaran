@@ -41,14 +41,19 @@ def is_user_admin(token, user_chat_id):
     admins = db_helper.get_bot_admins()
     admin_id = db_helper.get_setting("owner_admin_id")
     
+    print(f"[DEBUG] Checking admin status for user_chat_id: {user_chat_id}")
+    print(f"[DEBUG] Current admins list: {admins}, owner_admin_id: {admin_id}")
+    
     if admin_id:
         if str(admin_id) not in admins:
             db_helper.add_bot_admin(admin_id)
             admins.append(str(admin_id))
         if str(user_chat_id) == str(admin_id):
+            print(f"[DEBUG] Matches owner_admin_id ({admin_id}) - ACCESS GRANTED")
             return True
             
     if str(user_chat_id) in admins:
+        print(f"[DEBUG] Matches admins list - ACCESS GRANTED")
         return True
         
     env_chat_id = os.environ.get("TELEGRAM_CHAT_ID")
@@ -56,12 +61,14 @@ def is_user_admin(token, user_chat_id):
         db_helper.set_setting("owner_admin_id", str(user_chat_id))
         db_helper.add_bot_admin(str(user_chat_id))
         db_helper.invalidate_settings_cache()
+        print(f"[DEBUG] Matches env TELEGRAM_CHAT_ID ({env_chat_id}) - ACCESS GRANTED")
         return True
         
     if not admin_id and str(user_chat_id).strip() and not str(user_chat_id).startswith("-"):
         db_helper.set_setting("owner_admin_id", str(user_chat_id))
         db_helper.add_bot_admin(str(user_chat_id))
         db_helper.invalidate_settings_cache()
+        print(f"[DEBUG] No owner registered yet. Registering user as Owner - ACCESS GRANTED")
         return True
         
     target_group_id = db_helper.get_setting("telegram_chat_id")
@@ -74,11 +81,14 @@ def is_user_admin(token, user_chat_id):
             res = call_telegram_api("getChatMember", payload)
             if res and res.get("ok"):
                 status = res["result"].get("status")
+                print(f"[DEBUG] Group {target_group_id} member status check for user {user_chat_id}: {status}")
                 if status in ["creator", "administrator"]:
+                    print(f"[DEBUG] Group admin/creator - ACCESS GRANTED")
                     return True
         except Exception as e:
-            print(f"Error checking group admin status: {e}")
+            print(f"[DEBUG] Error checking group admin status: {e}")
             
+    print(f"[DEBUG] No credentials matched - ACCESS DENIED")
     return False
 def categorize_job(position):
     pos_lower = position.lower()
@@ -838,6 +848,7 @@ def webhook():
         user_chat_id = callback_query["message"]["chat"]["id"]
         message_id = callback_query["message"]["message_id"]
         callback_data = callback_query["data"]
+        clicker_user_id = callback_query["from"]["id"]
         
         # Check admin credentials
         admin_callbacks = [
@@ -853,7 +864,7 @@ def webhook():
             callback_data.startswith("delete_admin:")
         )
         
-        if is_admin_req and not is_user_admin(token, user_chat_id):
+        if is_admin_req and not is_user_admin(token, clicker_user_id):
             answer_callback_query(
                 token, 
                 callback_query_id, 
@@ -869,7 +880,7 @@ def webhook():
                 user_chat_id, 
                 message_id, 
                 "🚢 <b>Menu Pengaturan JobPelayaran Bot</b>\n\nSilakan pilih menu pengaturan bot di bawah ini:", 
-                get_main_menu_markup(is_user_admin(token, user_chat_id))
+                get_main_menu_markup(is_user_admin(token, clicker_user_id))
             )
             db_helper.set_user_state(user_chat_id, "normal")
             
