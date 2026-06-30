@@ -134,7 +134,13 @@ DEFAULT_AGENCIES = [
     ("PT Sumber Bakat Insani (SBI Manning)", "SIUPPAK & P3MI", "Kapal Pesiar",
      "Centennial Tower 15th Floor Unit A, Jl. Jend. Gatot Subroto Kav. 24-25, Jakarta Selatan 12930",
      "+62 21 5365 0000 / recruitment@sbimanning.co.id / IG: https://www.instagram.com/sbimanning.id",
-     "https://sbimanning.co.id/")
+     "https://sbimanning.co.id/"),
+
+    # --- PT Perwita Nusaraya ---
+    ("PT Perwita Nusaraya", "P3MI", "Kapal Pesiar & Hospitality & Landbase",
+     "Graha Perwita Building, Jl. Raya Bypass Krian Km. 31, Sidoarjo 61262, Jawa Timur",
+     "+62 851-7671-5850 / manpower@perwitamarine.co.id / IG: https://www.instagram.com/perwitanusaraya.manning",
+     "https://www.perwitanusaraya.co.id/")
 ]
 
 def get_db_connection():
