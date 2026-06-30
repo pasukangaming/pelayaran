@@ -42,7 +42,7 @@ def categorize_job(position):
     engine_kws = ['engineer', 'engine', 'oiler', 'wiper', 'fitter', 'electrician', 'motorman']
     hk_kws = ['housekeeping', 'stateroom steward', 'stateroom attendant', 'room steward', 'cabin steward', 'stateroom host', 'public area host', 'laundry host', 'utility cleaner', 'rooms division', 'cleaner', 'hk ', 'room boy', 'cabin attendant', 'housekeeper']
     fnb_kws = ['waiter', 'waitress', 'restaurant steward', 'buffet steward', 'wine steward', 'messboy', 'f&b', 'food & beverage', 'galley steward', 'restaurant', 'snack', 'server']
-    culinary_kws = ['cook', 'chef', 'galley', 'culinary', 'commis', 'baker', 'pastry', 'butcher', 'cook helper', 'demi chef']
+    culinary_kws = ['cook', 'chef', 'galley', 'culinary', 'commis', 'baker', 'pastry', 'butcher', 'cook helper', 'demi chef', 'kitchen']
     bar_kws = ['bar ', 'bartender', 'bar utility', 'bar steward', 'bar boy', 'bar keep', 'bar supervisor', 'bar manager', 'bar server', 'bar cleaner']
     laundry_kws = ['laundry', 'laundryman', 'laundry utility', 'laundry operator', 'laundry attendant']
     landbase_kws = ['hotel darat', 'receptionist', 'front office', 'spa ', 'butler', 'cleaner', 'landbase']
@@ -693,7 +693,7 @@ def webhook():
                 "engine": ['engineer', 'engine', 'oiler', 'wiper', 'fitter', 'electrician', 'motorman'],
                 "housekeeping": ['housekeeping', 'stateroom steward', 'stateroom attendant', 'room steward', 'cabin steward', 'stateroom host', 'public area host', 'laundry host', 'utility cleaner', 'rooms division', 'cleaner', 'hk ', 'room boy', 'cabin attendant', 'housekeeper'],
                 "fnb": ['waiter', 'waitress', 'restaurant steward', 'buffet steward', 'wine steward', 'messboy', 'f&b', 'food & beverage', 'galley steward', 'restaurant', 'snack', 'server'],
-                "culinary": ['cook', 'chef', 'galley', 'culinary', 'commis', 'baker', 'pastry', 'butcher', 'cook helper', 'demi chef'],
+                "culinary": ['cook', 'chef', 'galley', 'culinary', 'commis', 'baker', 'pastry', 'butcher', 'cook helper', 'demi chef', 'kitchen'],
                 "bar": ['bar ', 'bartender', 'bar utility', 'bar steward', 'bar boy', 'bar keep', 'bar supervisor', 'bar manager', 'bar server', 'bar cleaner'],
                 "laundry": ['laundry', 'laundryman', 'laundry utility', 'laundry operator', 'laundry attendant'],
                 "landbase": ['hotel darat', 'receptionist', 'front office', 'spa ', 'butler', 'cleaner', 'landbase']
