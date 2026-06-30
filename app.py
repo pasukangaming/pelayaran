@@ -179,26 +179,31 @@ def answer_callback_query(token, callback_query_id, text=None, show_alert=False)
     threading.Thread(target=_do, daemon=True).start()
 
 # Menu Markups
-def get_main_menu_markup():
-    return {
-        "inline_keyboard": [
-            [
-                {"text": "💼 Lowongan Per Jabatan", "callback_data": "menu_jobs"}
-            ],
-            [
-                {"text": "🏢 Daftar Agency Resmi", "callback_data": "menu_agencies"},
-                {"text": "🔔 Langganan Loker", "callback_data": "menu_subscribe"}
-            ],
-            [
-                {"text": "📊 Statistik Bot", "callback_data": "menu_stats"},
-                {"text": "🔄 Cek Loker Sekarang 🔐", "callback_data": "menu_scrape"}
-            ],
-            [
-                {"text": "⚙️ Atur Interval 🔐", "callback_data": "menu_settings"},
-                {"text": "📢 Bagikan Bot", "callback_data": "menu_share"}
-            ]
+def get_main_menu_markup(is_admin=False):
+    keyboard = [
+        [
+            {"text": "💼 Lowongan Per Jabatan", "callback_data": "menu_jobs"}
+        ],
+        [
+            {"text": "🏢 Daftar Agency Resmi", "callback_data": "menu_agencies"},
+            {"text": "🔔 Langganan Loker", "callback_data": "menu_subscribe"}
         ]
-    }
+    ]
+    if is_admin:
+        keyboard.append([
+            {"text": "📊 Statistik Bot", "callback_data": "menu_stats"},
+            {"text": "🔄 Cek Loker Sekarang 🔐", "callback_data": "menu_scrape"}
+        ])
+        keyboard.append([
+            {"text": "⚙️ Atur Interval 🔐", "callback_data": "menu_settings"},
+            {"text": "📢 Bagikan Bot", "callback_data": "menu_share"}
+        ])
+    else:
+        keyboard.append([
+            {"text": "📊 Statistik Bot", "callback_data": "menu_stats"},
+            {"text": "📢 Bagikan Bot", "callback_data": "menu_share"}
+        ])
+    return {"inline_keyboard": keyboard}
 
 def get_cv_menu_markup():
     return {
@@ -609,7 +614,7 @@ def scrape_step():
             f"🎉 <b>Total Loker Baru Terkirim: {new_jobs_total}</b>"
         )
         
-        edit_telegram_message(token, user_chat_id, message_id, final_text, get_main_menu_markup())
+        edit_telegram_message(token, user_chat_id, message_id, final_text, get_main_menu_markup(is_user_admin(token, user_chat_id)))
         db_helper.set_setting("last_run", int(time.time()))
         db_helper.prune_sent_jobs()
         return jsonify({"status": "finished"})
@@ -728,7 +733,7 @@ def webhook():
                 token, 
                 user_chat_id, 
                 "🚢 <b>Menu Pengaturan JobPelayaran Bot</b>\n\nSilakan pilih menu pengaturan bot di bawah ini:", 
-                get_main_menu_markup()
+                get_main_menu_markup(is_user_admin(token, user_chat_id))
             )
             db_helper.set_user_state(user_chat_id, "normal")
             
@@ -739,7 +744,7 @@ def webhook():
             state = db_helper.get_user_state(user_chat_id)
             if state in ["awaiting_agency_data", "awaiting_custom_interval", "awaiting_new_admin_id"] and not is_user_admin(token, user_chat_id):
                 db_helper.set_user_state(user_chat_id, "normal")
-                send_telegram_message(token, user_chat_id, "❌ Akses Ditolak: Anda bukan Administrator Bot.", get_main_menu_markup())
+                send_telegram_message(token, user_chat_id, "❌ Akses Ditolak: Anda bukan Administrator Bot.", get_main_menu_markup(is_user_admin(token, user_chat_id)))
             elif state == "awaiting_agency_data":
                 parts = [p.strip() for p in text.split("|")]
                 if len(parts) >= 3:
@@ -807,7 +812,7 @@ def webhook():
                     text_res = "❌ <b>Input Tidak Valid</b>\n\nHarap kirimkan angka bulat positif saja (dalam satuan menit). Contoh: <code>5</code> atau <code>30</code>."
                 
                 db_helper.set_user_state(user_chat_id, "normal")
-                send_telegram_message(token, user_chat_id, text_res, get_main_menu_markup())
+                send_telegram_message(token, user_chat_id, text_res, get_main_menu_markup(is_user_admin(token, user_chat_id)))
                 
             elif state == "awaiting_new_admin_id":
                 try:
@@ -821,11 +826,11 @@ def webhook():
                     text_res = "❌ <b>Input Tidak Valid</b>\n\nHarap kirimkan angka bulat positif Telegram User ID. Contoh: <code>123456789</code>."
                 
                 db_helper.set_user_state(user_chat_id, "normal")
-                send_telegram_message(token, user_chat_id, text_res, get_main_menu_markup())
+                send_telegram_message(token, user_chat_id, text_res, get_main_menu_markup(is_user_admin(token, user_chat_id)))
                 
             else:
                 db_helper.set_user_state(user_chat_id, "normal")
-                send_telegram_message(token, user_chat_id, "Kembali ke Menu Utama:", get_main_menu_markup())
+                send_telegram_message(token, user_chat_id, "Kembali ke Menu Utama:", get_main_menu_markup(is_user_admin(token, user_chat_id)))
                 
     elif "callback_query" in data:
         callback_query = data["callback_query"]
@@ -864,7 +869,7 @@ def webhook():
                 user_chat_id, 
                 message_id, 
                 "🚢 <b>Menu Pengaturan JobPelayaran Bot</b>\n\nSilakan pilih menu pengaturan bot di bawah ini:", 
-                get_main_menu_markup()
+                get_main_menu_markup(is_user_admin(token, user_chat_id))
             )
             db_helper.set_user_state(user_chat_id, "normal")
             
