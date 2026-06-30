@@ -286,6 +286,30 @@ def init_db(default_token=None, default_chat_id=None):
     conn.close()
     print("Database initialized successfully.")
 
+def get_bot_admins():
+    admins_str = get_setting("bot_admins", "")
+    if not admins_str:
+        return []
+    return [x.strip() for x in admins_str.split(",") if x.strip()]
+
+def add_bot_admin(chat_id):
+    admins = get_bot_admins()
+    if str(chat_id) not in admins:
+        admins.append(str(chat_id))
+        set_setting("bot_admins", ",".join(admins))
+        invalidate_settings_cache()
+        return True
+    return False
+
+def remove_bot_admin(chat_id):
+    admins = get_bot_admins()
+    if str(chat_id) in admins:
+        admins.remove(str(chat_id))
+        set_setting("bot_admins", ",".join(admins))
+        invalidate_settings_cache()
+        return True
+    return False
+
 # In-memory cache for settings (avoid DB hit on every API call)
 _settings_cache = {}
 

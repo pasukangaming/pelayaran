@@ -38,25 +38,32 @@ def invalidate_cred_cache():
     _cred_cache.clear()
 
 def is_user_admin(token, user_chat_id):
-    # 1. Check if owner_admin_id setting matches
+    admins = db_helper.get_bot_admins()
     admin_id = db_helper.get_setting("owner_admin_id")
-    if admin_id and str(user_chat_id) == str(admin_id):
+    
+    if admin_id:
+        if str(admin_id) not in admins:
+            db_helper.add_bot_admin(admin_id)
+            admins.append(str(admin_id))
+        if str(user_chat_id) == str(admin_id):
+            return True
+            
+    if str(user_chat_id) in admins:
         return True
         
-    # 2. Check if user_chat_id matches the environment CHAT_ID
     env_chat_id = os.environ.get("TELEGRAM_CHAT_ID")
     if env_chat_id and str(user_chat_id) == str(env_chat_id):
         db_helper.set_setting("owner_admin_id", str(user_chat_id))
+        db_helper.add_bot_admin(str(user_chat_id))
         db_helper.invalidate_settings_cache()
         return True
         
-    # 3. If owner_admin_id is not set, set the first private chat user as admin
     if not admin_id and str(user_chat_id).strip() and not str(user_chat_id).startswith("-"):
         db_helper.set_setting("owner_admin_id", str(user_chat_id))
+        db_helper.add_bot_admin(str(user_chat_id))
         db_helper.invalidate_settings_cache()
         return True
         
-    # 4. If target chat is a group, check if user is admin in that group
     target_group_id = db_helper.get_setting("telegram_chat_id")
     if target_group_id and str(target_group_id).startswith("-"):
         try:
@@ -350,8 +357,24 @@ def get_settings_markup(current_minutes):
     keyboard.append(row1)
     keyboard.append(row2)
     keyboard.append([{"text": "⌨️ Atur Waktu Kustom (Menit) 🔐", "callback_data": "menu_custom_interval"}])
-    keyboard.append([{"text": "🚨 Hapus Semua Data Loker 🔐", "callback_data": "menu_clear_jobs"}])
+    keyboard.append([
+        {"text": "👥 Kelola Admin 🔐", "callback_data": "menu_manage_admins"},
+        {"text": "🚨 Hapus Semua Loker 🔐", "callback_data": "menu_clear_jobs"}
+    ])
     keyboard.append([{"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}])
+    return {"inline_keyboard": keyboard}
+
+def get_admins_markup(admins, owner_id):
+    keyboard = []
+    for adm in admins:
+        if str(adm) != str(owner_id):
+            keyboard.append([
+                {"text": f"❌ Hapus ID: {adm}", "callback_data": f"delete_admin:{adm}"}
+            ])
+    keyboard.append([
+        {"text": "➕ Tambah Admin Baru 🔐", "callback_data": "menu_add_admin_prompt"}
+    ])
+    keyboard.append([{"text": "🔙 Kembali ke Pengaturan", "callback_data": "menu_settings"}])
     return {"inline_keyboard": keyboard}
 
 def extract_instagram_link(contact_str):
@@ -714,7 +737,7 @@ def webhook():
             
         else:
             state = db_helper.get_user_state(user_chat_id)
-            if state in ["awaiting_agency_data", "awaiting_custom_interval"] and not is_user_admin(token, user_chat_id):
+            if state in ["awaiting_agency_data", "awaiting_custom_interval", "awaiting_new_admin_id"] and not is_user_admin(token, user_chat_id):
                 db_helper.set_user_state(user_chat_id, "normal")
                 send_telegram_message(token, user_chat_id, "❌ Akses Ditolak: Anda bukan Administrator Bot.", get_main_menu_markup())
             elif state == "awaiting_agency_data":
@@ -786,6 +809,20 @@ def webhook():
                 db_helper.set_user_state(user_chat_id, "normal")
                 send_telegram_message(token, user_chat_id, text_res, get_main_menu_markup())
                 
+            elif state == "awaiting_new_admin_id":
+                try:
+                    new_id = int(text.strip())
+                    success = db_helper.add_bot_admin(new_id)
+                    if success:
+                        text_res = f"✅ <b>Admin Berhasil Ditambahkan!</b>\n\nTelegram User ID <code>{new_id}</code> sekarang terdaftar sebagai Administrator Bot dan memiliki akses ke menu gembok 🔐."
+                    else:
+                        text_res = f"❌ <b>Gagal Menambahkan</b>\n\nUser ID <code>{new_id}</code> mungkin sudah terdaftar sebagai Administrator."
+                except ValueError:
+                    text_res = "❌ <b>Input Tidak Valid</b>\n\nHarap kirimkan angka bulat positif Telegram User ID. Contoh: <code>123456789</code>."
+                
+                db_helper.set_user_state(user_chat_id, "normal")
+                send_telegram_message(token, user_chat_id, text_res, get_main_menu_markup())
+                
             else:
                 db_helper.set_user_state(user_chat_id, "normal")
                 send_telegram_message(token, user_chat_id, "Kembali ke Menu Utama:", get_main_menu_markup())
@@ -801,9 +838,15 @@ def webhook():
         admin_callbacks = [
             "menu_scrape", "menu_settings", "menu_custom_interval", 
             "menu_add_agency", "menu_add_agency_manual", "menu_add_agency_auto",
-            "menu_delete_agency_list", "menu_clear_jobs", "clear_jobs_confirm"
+            "menu_delete_agency_list", "menu_clear_jobs", "clear_jobs_confirm",
+            "menu_manage_admins", "menu_add_admin_prompt"
         ]
-        is_admin_req = callback_data in admin_callbacks or callback_data.startswith("set_interval_min:") or callback_data.startswith("delete_agency:")
+        is_admin_req = (
+            callback_data in admin_callbacks or 
+            callback_data.startswith("set_interval_min:") or 
+            callback_data.startswith("delete_agency:") or 
+            callback_data.startswith("delete_admin:")
+        )
         
         if is_admin_req and not is_user_admin(token, user_chat_id):
             answer_callback_query(
@@ -1385,6 +1428,79 @@ def webhook():
                 "Silakan ketik angka interval pemeriksaan loker dalam satuan menit (contoh: ketik <code>5</code> untuk memeriksa setiap 5 menit, atau <code>1</code> untuk 1 menit):\n\n"
                 "<i>Bot akan menunggu input angka dari Anda...</i>",
                 {"inline_keyboard": [[{"text": "🔙 Batal", "callback_data": "menu_settings"}]]}
+            )
+        elif callback_data == "menu_manage_admins":
+            answer_callback_query(token, callback_query_id)
+            admins = db_helper.get_bot_admins()
+            owner_id = db_helper.get_setting("owner_admin_id")
+            
+            text_adm = (
+                "👥 <b>Manajemen Administrator Bot 🔐</b>\n\n"
+                "Daftar administrator yang memiliki akses ke menu gembok 🔐:\n"
+                f"👑 <b>Owner/Pemilik:</b> <code>{owner_id}</code>\n\n"
+            )
+            if len(admins) > 1:
+                text_adm += "<b>Admin Tambahan:</b>\n"
+                for adm in admins:
+                    if str(adm) != str(owner_id):
+                        text_adm += f"• <code>{adm}</code>\n"
+            else:
+                text_adm += "<i>Belum ada admin tambahan yang didaftarkan.</i>"
+                
+            edit_telegram_message(
+                token, 
+                user_chat_id, 
+                message_id, 
+                text_adm, 
+                get_admins_markup(admins, owner_id)
+            )
+            
+        elif callback_data == "menu_add_admin_prompt":
+            answer_callback_query(token, callback_query_id)
+            db_helper.set_user_state(user_chat_id, "awaiting_new_admin_id")
+            edit_telegram_message(
+                token,
+                user_chat_id,
+                message_id,
+                "➕ <b>Tambah Administrator Baru 🔐</b>\n\n"
+                "Silakan kirimkan <b>Telegram User ID</b> orang yang ingin Anda jadikan admin baru (berupa deretan angka):\n\n"
+                "<i>Cara mencari ID: Orang tersebut bisa mengirim pesan `/id` ke bot ini terlebih dahulu dan memberikan ID-nya kepada Anda.</i>",
+                {"inline_keyboard": [[{"text": "🔙 Batal", "callback_data": "menu_manage_admins"}]]}
+            )
+            
+        elif callback_data.startswith("delete_admin:"):
+            target_adm = callback_data.split(":")[-1]
+            owner_id = db_helper.get_setting("owner_admin_id")
+            
+            if str(target_adm) == str(owner_id):
+                answer_callback_query(token, callback_query_id, "Gagal: Tidak bisa menghapus pemilik utama!", show_alert=True)
+            else:
+                removed = db_helper.remove_bot_admin(target_adm)
+                if removed:
+                    answer_callback_query(token, callback_query_id, f"Admin {target_adm} berhasil dihapus.")
+                else:
+                    answer_callback_query(token, callback_query_id, "Gagal menghapus admin.")
+                    
+            admins = db_helper.get_bot_admins()
+            text_adm = (
+                "👥 <b>Manajemen Administrator Bot 🔐</b>\n\n"
+                "Daftar administrator yang memiliki akses ke menu gembok 🔐:\n"
+                f"👑 <b>Owner/Pemilik:</b> <code>{owner_id}</code>\n\n"
+            )
+            if len(admins) > 1:
+                text_adm += "<b>Admin Tambahan:</b>\n"
+                for adm in admins:
+                    if str(adm) != str(owner_id):
+                        text_adm += f"• <code>{adm}</code>\n"
+            else:
+                text_adm += "<i>Belum ada admin tambahan yang didaftarkan.</i>"
+                
+            edit_telegram_message(
+                token, 
+                user_chat_id, 
+                message_id, 
+                text_adm, 
+                get_admins_markup(admins, owner_id)
             )
         elif callback_data == "menu_clear_jobs":
             answer_callback_query(token, callback_query_id)
