@@ -759,29 +759,48 @@ def webhook():
             )
             
         elif callback_data.startswith("list_agencies:"):
-            category = callback_data.split(":")[-1]
+            parts = callback_data.split(":")
+            category = parts[1]
+            page = int(parts[2]) if len(parts) > 2 else 0
             answer_callback_query(token, callback_query_id)
             
             agencies = db_helper.get_agencies_by_type(category)
+            per_page = 8
+            total_pages = max(1, (len(agencies) + per_page - 1) // per_page)
+            page = max(0, min(page, total_pages - 1))
+            start = page * per_page
+            page_agencies = agencies[start:start + per_page]
             
             category_title = "🚢 Cruise Line (SIUPPAK/P3MI)" if category == "cruise" else "🏨 Landbase Hotel (P3MI)"
-            text = f"🏢 <b>Daftar Agency Resmi - {category_title}</b>\n\n"
-            text += "<i>Berikut daftar agensi berizin resmi di Indonesia (aktif di SISKOP2MI/Kemenhub). Ketuk kontak untuk menyalin.</i>\n\n"
+            text = f"🏢 <b>Daftar Agency Resmi - {category_title}</b>\n"
+            text += f"<i>Halaman {page + 1} dari {total_pages} ({len(agencies)} agensi total)</i>\n\n"
             
-            for idx, ag in enumerate(agencies):
-                text += f"{idx+1}. <b>{ag['name']}</b>\n"
-                text += f"   📄 <b>Izin:</b> {ag['license_no']}\n"
+            for idx, ag in enumerate(page_agencies):
+                global_idx = start + idx + 1
+                text += f"{global_idx}. <b>{ag['name']}</b>\n"
                 if ag['contact']:
-                    text += f"   📞 <b>Kontak:</b> <code>{ag['contact']}</code>\n"
+                    # Shorten contact to avoid overflow - just show first contact info
+                    contact_short = ag['contact'].split(' / ')[0] if ' / ' in ag['contact'] else ag['contact']
+                    if len(contact_short) > 80:
+                        contact_short = contact_short[:77] + "..."
+                    text += f"   📞 <code>{contact_short}</code>\n"
                 if ag['website']:
-                    text += f"   🌐 <b>Web:</b> <a href='{ag['website']}'>Kunjungi Website / Portal</a>\n"
+                    text += f"   🌐 <a href='{ag['website']}'>Portal / Website</a>\n"
                 text += "\n"
-                
-            markup = {
-                "inline_keyboard": [
-                    [{"text": "🔙 Kembali", "callback_data": "menu_agencies"}]
-                ]
-            }
+            
+            # Build navigation buttons
+            nav_buttons = []
+            if page > 0:
+                nav_buttons.append({"text": "◀️ Sebelumnya", "callback_data": f"list_agencies:{category}:{page - 1}"})
+            if page < total_pages - 1:
+                nav_buttons.append({"text": "Selanjutnya ▶️", "callback_data": f"list_agencies:{category}:{page + 1}"})
+            
+            keyboard = []
+            if nav_buttons:
+                keyboard.append(nav_buttons)
+            keyboard.append([{"text": "🔙 Kembali", "callback_data": "menu_agencies"}])
+            
+            markup = {"inline_keyboard": keyboard}
             edit_telegram_message(token, user_chat_id, message_id, text, markup)
             
         elif callback_data == "menu_add_agency":
@@ -860,7 +879,9 @@ def webhook():
             )
             
         elif callback_data.startswith("list_agencies_loc:"):
-            loc = callback_data.split(":")[-1]
+            parts = callback_data.split(":")
+            loc = parts[1]
+            page = int(parts[2]) if len(parts) > 2 else 0
             answer_callback_query(token, callback_query_id)
             
             if loc == "Lainnya":
@@ -868,27 +889,43 @@ def webhook():
                 agencies = [a for a in all_agencies if "jakarta" not in a["address"].lower() and "bali" not in a["address"].lower() and "surabaya" not in a["address"].lower()]
             else:
                 agencies = db_helper.get_agencies_by_location(loc)
-                
-            text = f"📍 <b>Daftar Agency Resmi di Wilayah: {loc}</b>\n\n"
-            text += "<i>Ketuk kontak untuk menyalin.</i>\n\n"
             
-            if agencies:
-                for idx, ag in enumerate(agencies):
-                    text += f"{idx+1}. <b>{ag['name']}</b>\n"
-                    text += f"   📄 <b>Izin:</b> {ag['license_no']}\n"
+            per_page = 8
+            total_pages = max(1, (len(agencies) + per_page - 1) // per_page) if agencies else 1
+            page = max(0, min(page, total_pages - 1))
+            start = page * per_page
+            page_agencies = agencies[start:start + per_page]
+                
+            text = f"📍 <b>Daftar Agency di Wilayah: {loc}</b>\n"
+            text += f"<i>Halaman {page + 1} dari {total_pages} ({len(agencies)} agensi)</i>\n\n"
+            
+            if page_agencies:
+                for idx, ag in enumerate(page_agencies):
+                    global_idx = start + idx + 1
+                    text += f"{global_idx}. <b>{ag['name']}</b>\n"
                     if ag['contact']:
-                        text += f"   📞 <b>Kontak:</b> <code>{ag['contact']}</code>\n"
+                        contact_short = ag['contact'].split(' / ')[0] if ' / ' in ag['contact'] else ag['contact']
+                        if len(contact_short) > 80:
+                            contact_short = contact_short[:77] + "..."
+                        text += f"   📞 <code>{contact_short}</code>\n"
                     if ag['website']:
-                        text += f"   🌐 <b>Web:</b> <a href='{ag['website']}'>Kunjungi Website / Portal</a>\n"
+                        text += f"   🌐 <a href='{ag['website']}'>Portal / Website</a>\n"
                     text += "\n"
             else:
                 text += "❌ Belum ada agency terdaftar di wilayah ini."
-                
-            markup = {
-                "inline_keyboard": [
-                    [{"text": "🔙 Kembali", "callback_data": "menu_agencies_location"}]
-                ]
-            }
+            
+            nav_buttons = []
+            if page > 0:
+                nav_buttons.append({"text": "◀️ Sebelumnya", "callback_data": f"list_agencies_loc:{loc}:{page - 1}"})
+            if page < total_pages - 1:
+                nav_buttons.append({"text": "Selanjutnya ▶️", "callback_data": f"list_agencies_loc:{loc}:{page + 1}"})
+            
+            keyboard = []
+            if nav_buttons:
+                keyboard.append(nav_buttons)
+            keyboard.append([{"text": "🔙 Kembali", "callback_data": "menu_agencies_location"}])
+            
+            markup = {"inline_keyboard": keyboard}
             edit_telegram_message(token, user_chat_id, message_id, text, markup)
             
         elif callback_data == "menu_subscribe":
