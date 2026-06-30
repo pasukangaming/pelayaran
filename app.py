@@ -300,6 +300,58 @@ def get_settings_markup(current_interval):
     keyboard.append([{"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}])
     return {"inline_keyboard": keyboard}
 
+def extract_instagram_link(contact_str):
+    if not contact_str:
+        return None
+    import re
+    match = re.search(r'https?://[^\s]*instagram\.com[^\s]*', contact_str)
+    if match:
+        return match.group(0).rstrip('/')
+    return None
+
+def clean_contact_info(contact_str):
+    if not contact_str:
+        return ""
+    import re
+    cleaned = re.sub(r'\s*/?\s*IG:\s*https?://[^\s]*instagram\.com[^\s]*', '', contact_str, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\s*/?\s*https?://[^\s]*instagram\.com[^\s]*', '', cleaned, flags=re.IGNORECASE)
+    return cleaned.strip(' /')
+
+def get_agency_by_job(job):
+    try:
+        conn = db_helper.get_db_connection()
+        cursor = conn.cursor()
+        
+        # 1. Exact match
+        cursor.execute("SELECT contact, website FROM agencies WHERE name = ?", (job['company'],))
+        row = cursor.fetchone()
+        if row:
+            conn.close()
+            return dict(row)
+            
+        # 2. Partial match
+        cursor.execute("SELECT contact, website FROM agencies WHERE ? LIKE '%' || name || '%' OR name LIKE '%' || ? || '%'", (job['company'], job['company']))
+        row = cursor.fetchone()
+        if row:
+            conn.close()
+            return dict(row)
+            
+        # 3. Domain match
+        from urllib.parse import urlparse
+        job_domain = urlparse(job['link']).netloc.replace('www.', '')
+        cursor.execute("SELECT contact, website FROM agencies")
+        all_ags = cursor.fetchall()
+        for ag in all_ags:
+            if ag['website']:
+                ag_domain = urlparse(ag['website']).netloc.replace('www.', '')
+                if job_domain == ag_domain:
+                    conn.close()
+                    return dict(ag)
+        conn.close()
+    except Exception as e:
+        print(f"Error in get_agency_by_job: {e}")
+    return None
+
 def format_job_message(job):
     pos = scrapers.escape_html(job['position'])
     comp = scrapers.escape_html(job['company'])
@@ -329,6 +381,14 @@ def format_job_message(job):
     else:
         duration_str = scrapers.escape_html(dur)
         
+    # Look up agency to find Instagram/social media
+    agency_info = get_agency_by_job(job)
+    ig_str = ""
+    if agency_info:
+        ig_link = extract_instagram_link(agency_info['contact'])
+        if ig_link:
+            ig_str = f"📸 <b>Medsos Agency:</b> <a href='{ig_link}'>Instagram Resmi</a>\n"
+        
     message = (
         f"💼 <b>LOWONGAN JOB BARU</b>\n\n"
         f"💼 <b>Posisi:</b> {pos}\n"
@@ -336,7 +396,8 @@ def format_job_message(job):
         f"💵 <b>Gaji:</b> {salary_str}\n"
         f"📅 <b>Join Date:</b> {join_str}\n"
         f"⏱ <b>Kontrak:</b> {duration_str}\n"
-        f"🏢 <b>Perusahaan:</b> {comp}\n\n"
+        f"🏢 <b>Perusahaan:</b> {comp}\n"
+        f"{ig_str}\n"
         f"🔗 <a href='{link}'>Detail &amp; Apply Loker</a>"
     )
     return message
@@ -788,14 +849,19 @@ def webhook():
             for idx, ag in enumerate(page_agencies):
                 global_idx = start + idx + 1
                 text += f"{global_idx}. <b>{ag['name']}</b>\n"
-                if ag['contact']:
-                    # Shorten contact to avoid overflow - just show first contact info
-                    contact_short = ag['contact'].split(' / ')[0] if ' / ' in ag['contact'] else ag['contact']
+                
+                ig_link = extract_instagram_link(ag['contact'])
+                cleaned_contact = clean_contact_info(ag['contact'])
+                
+                if cleaned_contact:
+                    contact_short = cleaned_contact.split(' / ')[0] if ' / ' in cleaned_contact else cleaned_contact
                     if len(contact_short) > 80:
                         contact_short = contact_short[:77] + "..."
                     text += f"   📞 <code>{contact_short}</code>\n"
                 if ag['website']:
                     text += f"   🌐 <a href='{ag['website']}'>Portal / Website</a>\n"
+                if ig_link:
+                    text += f"   📸 <a href='{ig_link}'>Instagram Resmi</a>\n"
                 text += "\n"
             
             # Build navigation buttons
@@ -913,13 +979,19 @@ def webhook():
                 for idx, ag in enumerate(page_agencies):
                     global_idx = start + idx + 1
                     text += f"{global_idx}. <b>{ag['name']}</b>\n"
-                    if ag['contact']:
-                        contact_short = ag['contact'].split(' / ')[0] if ' / ' in ag['contact'] else ag['contact']
+                    
+                    ig_link = extract_instagram_link(ag['contact'])
+                    cleaned_contact = clean_contact_info(ag['contact'])
+                    
+                    if cleaned_contact:
+                        contact_short = cleaned_contact.split(' / ')[0] if ' / ' in cleaned_contact else cleaned_contact
                         if len(contact_short) > 80:
                             contact_short = contact_short[:77] + "..."
                         text += f"   📞 <code>{contact_short}</code>\n"
                     if ag['website']:
                         text += f"   🌐 <a href='{ag['website']}'>Portal / Website</a>\n"
+                    if ig_link:
+                        text += f"   📸 <a href='{ig_link}'>Instagram Resmi</a>\n"
                     text += "\n"
             else:
                 text += "❌ Belum ada agency terdaftar di wilayah ini."
