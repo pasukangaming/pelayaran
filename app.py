@@ -744,7 +744,7 @@ def webhook():
             send_telegram_message(
                 token, 
                 user_chat_id, 
-                "🚢 <b>Menu Pengaturan JobPelayaran Bot</b>\n\nSilakan pilih menu pengaturan bot di bawah ini:", 
+                "🚢 <b>Selamat datang para siswa</b>\n\nSilakan pilih menu bot di bawah ini:", 
                 get_main_menu_markup(is_user_admin(token, sender_user_id, chat["type"]))
             )
             db_helper.set_user_state(user_chat_id, "normal")
@@ -882,7 +882,7 @@ def webhook():
                 token, 
                 user_chat_id, 
                 message_id, 
-                "🚢 <b>Menu Pengaturan JobPelayaran Bot</b>\n\nSilakan pilih menu pengaturan bot di bawah ini:", 
+                "🚢 <b>Selamat datang para siswa</b>\n\nSilakan pilih menu bot di bawah ini:", 
                 get_main_menu_markup(is_user_admin(token, clicker_user_id, chat_type))
             )
             db_helper.set_user_state(user_chat_id, "normal")
@@ -1388,7 +1388,7 @@ def webhook():
                 f"⏱ <b>Interval Scraping:</b> {interval_str} sekali\n"
                 f"🔄 <b>Terakhir Dipindai:</b> <code>{local_time}</code>\n"
                 f"📢 <b>Target Group ID:</b> <code>{target_chat_id}</code>\n\n"
-                f"<i>Sistem berjalan otomatis di server PythonAnywhere secara realtime.</i>"
+                f"<i>Sistem berjalan otomatis di server secara realtime.</i>"
             )
             
             markup = {
