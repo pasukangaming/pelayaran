@@ -122,7 +122,19 @@ DEFAULT_AGENCIES = [
     ("Hired Global (PT Permata Sukses Abadi)", "P3MI (Penempatan Pekerja Migran Indonesia)", "Landbase & Hotel & Hospitality",
      "Jl. Nasional III No. 225, Desa Gladag, Kec. Rogojampi, Banyuwangi, Jawa Timur 68462 | Singapura: 160 Robinson Road #14-04, Singapore 068914",
      "08113507070 / WA Channel: https://whatsapp.com/channel/0029VahHxZG4yltSDCcq6r3h",
-     "https://hiredglobal.co/")
+     "https://hiredglobal.co/"),
+
+    # --- CTI Yogyakarta / PT Cemerlang Tunggal Intinusa ---
+    ("CTI Yogyakarta (PT Cemerlang Tunggal Intinusa)", "SIUPPAK & P3MI", "Kapal Pesiar",
+     "Jl. Arimbi No. 11, Babadan, Banguntapan, Bantul, D.I. Yogyakarta 55198",
+     "+62 274 557333 / yogya@ctiyogya.com / IG: https://www.instagram.com/ctiyogyakarta",
+     "https://ctiyogya.com/"),
+
+    # --- PT Sumber Bakat Insani (SBI Manning) ---
+    ("PT Sumber Bakat Insani (SBI Manning)", "SIUPPAK & P3MI", "Kapal Pesiar",
+     "Centennial Tower 15th Floor Unit A, Jl. Jend. Gatot Subroto Kav. 24-25, Jakarta Selatan 12930",
+     "+62 21 5365 0000 / recruitment@sbimanning.co.id / IG: https://www.instagram.com/sbimanning.id",
+     "https://sbimanning.co.id/")
 ]
 
 def get_db_connection():
