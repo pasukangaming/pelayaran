@@ -52,63 +52,76 @@ DEFAULT_AGENCIES = [
      "Ruko Puri Permata Purwo Kav 2, Sambiroto, Purwomartani, Kalasan, Sleman, DIY 55571",
      "+62 878 39393553 / info@validitasbonafid.com", "https://www.validitasbonafid.com/"),
 
-    # --- AKPAR GSP International ---
-    ("AKPAR GSP International", "Lembaga Pendidikan & Rekrutmen Resmi", "Kapal Pesiar & Hospitality",
-     "Indonesia", "IG: https://www.instagram.com/akpargspinternasional/",
+    # --- AKPAR GSP International / PT Ganesha Swadaya Pamungkas ---
+    ("AKPAR GSP International", "SIUPPAK & P3MI (MLC 2006)", "Kapal Pesiar & Hospitality",
+     "Jl. Kramat Sentiong Raya No. 33A, Kramat, Senen, Jakarta Pusat 10450",
+     "021-22390239 / WA: 0815-7866-7879 / info@gsp.ac.id / IG: https://www.instagram.com/akpargspinternasional/",
      "https://www.akpargspintl.ac.id/"),
 
-    # --- PT Inti Wahana Semaya ---
-    ("PT Inti Wahana Semaya", "P3MI", "Kapal Pesiar & Hospitality",
-     "Indonesia", "IG: https://www.instagram.com/intiwahanasemaya/",
+    # --- PT Inti Wahana Semaya (IWS) ---
+    ("PT Inti Wahana Semaya", "SIUPPAK No. 42.27 Tahun 2015 (MLC 2006)", "Kapal Pesiar",
+     "Jl. Cenigan Sari IV A No. 23, Sesetan, Denpasar, Bali 80223",
+     "+62 819-9937-7445 / +62 877-0641-8006 / crewing@intiwahanasemaya.com / IG: https://www.instagram.com/intiwahanasemaya/",
      "https://intiwahanasemaya.com/"),
 
-    # --- Inara Recruitment / PT Inti Gema Nusantara ---
-    ("PT Inti Gema Nusantara (Inara Recruitment)", "SIUPPAK & P3MI", "Kapal Pesiar & Hospitality",
-     "Indonesia", "IG: https://www.instagram.com/intigemanusantara/",
+    # --- PT Inti Gema Nusantara (Inara Recruitment) ---
+    ("PT Inti Gema Nusantara (Inara Recruitment)", "SIUPPAK No. 156-41 R Tahun 2025", "Kapal Pesiar",
+     "Jl. Melati No. 45 Gedung F, Dangin Puri Kangin, Denpasar Utara, Bali 80234",
+     "+62 812-3890-4433 / contact@inararecruitment.com / IG: https://www.instagram.com/intigemanusantara/",
      "https://inararecruitment.com/"),
 
-    # --- MCS Internasional ---
-    ("MCS Internasional", "P3MI", "Kapal Pesiar & Hospitality",
-     "Indonesia", "IG: https://www.instagram.com/mcs.internasional/",
+    # --- PT MCS Internasional ---
+    ("PT MCS Internasional", "P3MI (Anak usaha PT Humpuss Maritim Internasional Tbk)", "Kapal Pesiar & Maritime",
+     "Granadi Building 4th Floor, Jl. HR Rasuna Said Blok X-1 Kav 8-9, Jakarta 12950",
+     "+6221 2525196 / business@mcs-internasional.com / IG: https://www.instagram.com/mcs.internasional/",
      "https://www.mcs-internasional.com/"),
 
-    # --- Top Karir Global / Indonesia ---
-    ("Top Karir Global", "Recruitment Agency", "Kapal Pesiar & Hospitality & Landbase",
-     "Indonesia", "IG Global: https://www.instagram.com/topkarir.global/ / IG ID: https://www.instagram.com/topkaririndonesia/",
-     "https://www.instagram.com/topkarir.global/"),
+    # --- Top Karir Global / PT Top Karir Indonesia ---
+    ("Top Karir Global (PT Top Karir Indonesia)", "Recruitment Portal & Agency", "Kapal Pesiar & Hospitality & Landbase",
+     "Jakarta, Indonesia",
+     "info@topkarir.com / IG Global: https://www.instagram.com/topkarir.global/ / IG ID: https://www.instagram.com/topkaririndonesia/",
+     "https://www.topkarir.com/"),
 
     # --- Carnival Cruise Lines (International) ---
     ("Carnival Cruise Lines - Ship Jobs", "Official International Cruise Line", "Kapal Pesiar",
-     "Carnival Place, 3655 NW 87th Avenue, Miami, FL 33178, USA",
-     "shipjobs@carnival.com", "https://shipjobs.carnival.com/"),
+     "3655 NW 87th Avenue, Miami, Florida 33178, USA",
+     "careers@carnival.com / fleetpeoplesupport@carnivalssi.com",
+     "https://shipjobs.carnival.com/"),
     ("Carnival Cruise Lines - Hotel Department", "Official International Cruise Line", "Kapal Pesiar",
-     "Carnival Place, 3655 NW 87th Avenue, Miami, FL 33178, USA",
-     "shipjobs@carnival.com", "https://shipjobs.carnival.com/search?d=hotel-ccl"),
+     "3655 NW 87th Avenue, Miami, Florida 33178, USA",
+     "careers@carnival.com / fleetpeoplesupport@carnivalssi.com",
+     "https://shipjobs.carnival.com/search?d=hotel-ccl"),
 
-    # --- Royal Caribbean / BSM Cruise Indonesia ---
-    ("Royal Caribbean Group - MyRCL Home", "Official International Cruise Line", "Kapal Pesiar",
-     "Royal Caribbean Group, 1050 Caribbean Way, Miami, FL 33132, USA",
-     "IG: https://www.instagram.com/bsm.cruise.indonesia/", "https://myrclhome.com/"),
+    # --- Royal Caribbean Group (International) + Mitra Indonesia EBU ---
+    ("Royal Caribbean Group - MyRCL Portal", "Official International Cruise Line", "Kapal Pesiar",
+     "1050 Caribbean Way, Miami, FL 33132, USA (Mitra Indonesia: PT Equinox Bahari Utama, Globe Building 4-5F, Jl. Warung Buncit Raya 31-33, Jakarta Selatan)",
+     "support.rccl@ebu.co.id / IG: https://www.instagram.com/bsm.cruise.indonesia/",
+     "https://myrclhome.com/"),
     ("Royal Caribbean - CTRAC Portal", "Official International Cruise Line", "Kapal Pesiar",
-     "Royal Caribbean Group, 1050 Caribbean Way, Miami, FL 33132, USA",
-     "IG: https://www.instagram.com/bsm.cruise.indonesia/", "https://rclctrac.com/"),
+     "1050 Caribbean Way, Miami, FL 33132, USA (Mitra Indonesia: PT Equinox Bahari Utama, Jakarta Selatan)",
+     "support.rccl@ebu.co.id / IG: https://www.instagram.com/bsm.cruise.indonesia/",
+     "https://rclctrac.com/"),
 
-    # --- Schulte Cruise / AMSIH HHRMA ---
-    ("Schulte Cruise Indonesia - Career Day", "SIUPPAK & P3MI", "Kapal Pesiar",
-     "Indonesia", "IG Yogyakarta: https://www.instagram.com/amsih_hhrmayogyakarta/ / IG Jateng: https://www.instagram.com/amsih_hhrmajateng/",
+    # --- BSM Crew Service Centre Indonesia (Schulte Cruise) ---
+    ("BSM Schulte Cruise Indonesia - Career Day", "SIUPPAK & P3MI (Bernhard Schulte Shipmanagement)", "Kapal Pesiar",
+     "Jakarta: Setiabudi Atrium 3F, Jl. HR Rasuna Said | Bali: BSM House, Jl. Bypass Ngurah Rai No.69 | Surabaya: Intiland Tower 3F, Jl. Panglima Sudirman 101",
+     "Jakarta: jakarta@schultecruise.com (+62 21 3000 2201) | Bali: bali@schultecruise.com (+62 361 3000 200) | IG: https://www.instagram.com/amsih_hhrmayogyakarta/",
      "https://www.schultecruise.id/careerday"),
-    ("Schulte Cruise Indonesia - Online Registration", "SIUPPAK & P3MI", "Kapal Pesiar",
-     "Indonesia", "IG Yogyakarta: https://www.instagram.com/amsih_hhrmayogyakarta/ / IG Jateng: https://www.instagram.com/amsih_hhrmajateng/",
+    ("BSM Schulte Cruise Indonesia - Registrasi Online", "SIUPPAK & P3MI (Bernhard Schulte Shipmanagement)", "Kapal Pesiar",
+     "Jakarta: Setiabudi Atrium 3F, Jl. HR Rasuna Said | Bali: BSM House, Jl. Bypass Ngurah Rai No.69 | Surabaya: Intiland Tower 3F, Jl. Panglima Sudirman 101",
+     "Surabaya: surabaya@schultecruise.com (+62 31 6000 0650) | IG Jateng: https://www.instagram.com/amsih_hhrmajateng/",
      "https://www.schultecruise.id/onlineregistration"),
 
-    # --- PT SAS Indonesia / Indosas ---
+    # --- PT SAS Indonesia (Indosas / PT Sentina Arta Sumberdaya) ---
     ("PT SAS Indonesia (Indosas)", "SIUPPAK & P3MI", "Kapal Pesiar & Hospitality",
-     "Indonesia", "IG: https://www.instagram.com/ptsasindonesia/",
+     "Wisma BSG Lantai 10, Jl. Abdul Muis No. 40, Jakarta Pusat 10160",
+     "+62 21 34834442 / info@ptsasindonesia.com / IG: https://www.instagram.com/ptsasindonesia/",
      "https://indosas.com/"),
 
-    # --- Hired Global ---
-    ("Hired Global", "Recruitment Agency International", "Kapal Pesiar & Hospitality & Landbase",
-     "International", "WA Channel: https://whatsapp.com/channel/0029VahHxZG4yltSDCcq6r3h",
+    # --- Hired Global / PT Permata Sukses Abadi ---
+    ("Hired Global (PT Permata Sukses Abadi)", "P3MI (Penempatan Pekerja Migran Indonesia)", "Landbase & Hotel & Hospitality",
+     "Jl. Nasional III No. 225, Desa Gladag, Kec. Rogojampi, Banyuwangi, Jawa Timur 68462 | Singapura: 160 Robinson Road #14-04, Singapore 068914",
+     "08113507070 / WA Channel: https://whatsapp.com/channel/0029VahHxZG4yltSDCcq6r3h",
      "https://hiredglobal.co/")
 ]
 
