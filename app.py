@@ -723,6 +723,16 @@ def scrape_step():
         
     return jsonify({"status": "in_progress", "index": index})
 
+@app.route("/reset-owner")
+def reset_owner_route():
+    try:
+        db_helper.set_setting("owner_admin_id", None)
+        db_helper.set_setting("bot_admins", "")
+        db_helper.invalidate_settings_cache()
+        return "Owner Admin has been successfully reset! Message /start to the bot on your main account to become the new owner.", 200
+    except Exception as e:
+        return f"Error resetting owner: {e}", 500
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
