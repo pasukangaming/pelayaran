@@ -50,7 +50,66 @@ DEFAULT_AGENCIES = [
      "ATS Bali Office, Denpasar, Bali", "recruitment@atsbali.com / IG: https://www.instagram.com/atsbaliofficial/", "https://www.atsbali.com/"),
     ("PT Validitas Bonafid", "SIUPPAK & P3MI", "Kapal Pesiar & Hospitality",
      "Ruko Puri Permata Purwo Kav 2, Sambiroto, Purwomartani, Kalasan, Sleman, DIY 55571",
-     "+62 878 39393553 / info@validitasbonafid.com", "https://www.validitasbonafid.com/")
+     "+62 878 39393553 / info@validitasbonafid.com", "https://www.validitasbonafid.com/"),
+
+    # --- AKPAR GSP International ---
+    ("AKPAR GSP International", "Lembaga Pendidikan & Rekrutmen Resmi", "Kapal Pesiar & Hospitality",
+     "Indonesia", "IG: https://www.instagram.com/akpargspinternasional/",
+     "https://www.akpargspintl.ac.id/"),
+
+    # --- PT Inti Wahana Semaya ---
+    ("PT Inti Wahana Semaya", "P3MI", "Kapal Pesiar & Hospitality",
+     "Indonesia", "IG: https://www.instagram.com/intiwahanasemaya/",
+     "https://intiwahanasemaya.com/"),
+
+    # --- Inara Recruitment / PT Inti Gema Nusantara ---
+    ("PT Inti Gema Nusantara (Inara Recruitment)", "SIUPPAK & P3MI", "Kapal Pesiar & Hospitality",
+     "Indonesia", "IG: https://www.instagram.com/intigemanusantara/",
+     "https://inararecruitment.com/"),
+
+    # --- MCS Internasional ---
+    ("MCS Internasional", "P3MI", "Kapal Pesiar & Hospitality",
+     "Indonesia", "IG: https://www.instagram.com/mcs.internasional/",
+     "https://www.mcs-internasional.com/"),
+
+    # --- Top Karir Global / Indonesia ---
+    ("Top Karir Global", "Recruitment Agency", "Kapal Pesiar & Hospitality & Landbase",
+     "Indonesia", "IG Global: https://www.instagram.com/topkarir.global/ / IG ID: https://www.instagram.com/topkaririndonesia/",
+     "https://www.instagram.com/topkarir.global/"),
+
+    # --- Carnival Cruise Lines (International) ---
+    ("Carnival Cruise Lines - Ship Jobs", "Official International Cruise Line", "Kapal Pesiar",
+     "Carnival Place, 3655 NW 87th Avenue, Miami, FL 33178, USA",
+     "shipjobs@carnival.com", "https://shipjobs.carnival.com/"),
+    ("Carnival Cruise Lines - Hotel Department", "Official International Cruise Line", "Kapal Pesiar",
+     "Carnival Place, 3655 NW 87th Avenue, Miami, FL 33178, USA",
+     "shipjobs@carnival.com", "https://shipjobs.carnival.com/search?d=hotel-ccl"),
+
+    # --- Royal Caribbean / BSM Cruise Indonesia ---
+    ("Royal Caribbean Group - MyRCL Home", "Official International Cruise Line", "Kapal Pesiar",
+     "Royal Caribbean Group, 1050 Caribbean Way, Miami, FL 33132, USA",
+     "IG: https://www.instagram.com/bsm.cruise.indonesia/", "https://myrclhome.com/"),
+    ("Royal Caribbean - CTRAC Portal", "Official International Cruise Line", "Kapal Pesiar",
+     "Royal Caribbean Group, 1050 Caribbean Way, Miami, FL 33132, USA",
+     "IG: https://www.instagram.com/bsm.cruise.indonesia/", "https://rclctrac.com/"),
+
+    # --- Schulte Cruise / AMSIH HHRMA ---
+    ("Schulte Cruise Indonesia - Career Day", "SIUPPAK & P3MI", "Kapal Pesiar",
+     "Indonesia", "IG Yogyakarta: https://www.instagram.com/amsih_hhrmayogyakarta/ / IG Jateng: https://www.instagram.com/amsih_hhrmajateng/",
+     "https://www.schultecruise.id/careerday"),
+    ("Schulte Cruise Indonesia - Online Registration", "SIUPPAK & P3MI", "Kapal Pesiar",
+     "Indonesia", "IG Yogyakarta: https://www.instagram.com/amsih_hhrmayogyakarta/ / IG Jateng: https://www.instagram.com/amsih_hhrmajateng/",
+     "https://www.schultecruise.id/onlineregistration"),
+
+    # --- PT SAS Indonesia / Indosas ---
+    ("PT SAS Indonesia (Indosas)", "SIUPPAK & P3MI", "Kapal Pesiar & Hospitality",
+     "Indonesia", "IG: https://www.instagram.com/ptsasindonesia/",
+     "https://indosas.com/"),
+
+    # --- Hired Global ---
+    ("Hired Global", "Recruitment Agency International", "Kapal Pesiar & Hospitality & Landbase",
+     "International", "WA Channel: https://whatsapp.com/channel/0029VahHxZG4yltSDCcq6r3h",
+     "https://hiredglobal.co/")
 ]
 
 def get_db_connection():
