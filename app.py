@@ -39,7 +39,11 @@ def invalidate_cred_cache():
 
 def is_user_admin(token, user_chat_id, chat_type="private"):
     admins = db_helper.get_bot_admins()
+    admins = [str(a) for a in admins if a and str(a).lower() != "none"]
+    
     admin_id = db_helper.get_setting("owner_admin_id")
+    if not admin_id or str(admin_id).strip() == "" or str(admin_id).lower() == "none":
+        admin_id = None
     
     print(f"[DEBUG] Checking admin status for user_chat_id: {user_chat_id}, chat_type: {chat_type}")
     print(f"[DEBUG] Current admins list: {admins}, owner_admin_id: {admin_id}")
@@ -57,7 +61,7 @@ def is_user_admin(token, user_chat_id, chat_type="private"):
         return True
         
     env_chat_id = os.environ.get("TELEGRAM_CHAT_ID")
-    if env_chat_id and str(user_chat_id) == str(env_chat_id):
+    if env_chat_id and str(env_chat_id).lower() != "none" and str(user_chat_id) == str(env_chat_id):
         db_helper.set_setting("owner_admin_id", str(user_chat_id))
         db_helper.add_bot_admin(str(user_chat_id))
         db_helper.invalidate_settings_cache()
@@ -733,7 +737,8 @@ def webhook():
         message_data = data["message"]
         chat = message_data["chat"]
         user_chat_id = chat["id"]
-        sender_user_id = message_data.get("from", {}).get("id", user_chat_id)
+        from_data = message_data.get("from")
+        sender_user_id = from_data.get("id") if from_data and isinstance(from_data, dict) else user_chat_id
         text = message_data.get("text", "").strip()
         
         if chat["type"] in ["group", "supergroup", "channel"]:
