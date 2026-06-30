@@ -733,6 +733,7 @@ def webhook():
         message_data = data["message"]
         chat = message_data["chat"]
         user_chat_id = chat["id"]
+        sender_user_id = message_data.get("from", {}).get("id", user_chat_id)
         text = message_data.get("text", "").strip()
         
         if chat["type"] in ["group", "supergroup", "channel"]:
@@ -744,7 +745,7 @@ def webhook():
                 token, 
                 user_chat_id, 
                 "🚢 <b>Menu Pengaturan JobPelayaran Bot</b>\n\nSilakan pilih menu pengaturan bot di bawah ini:", 
-                get_main_menu_markup(is_user_admin(token, user_chat_id, chat["type"]))
+                get_main_menu_markup(is_user_admin(token, sender_user_id, chat["type"]))
             )
             db_helper.set_user_state(user_chat_id, "normal")
             
@@ -753,9 +754,9 @@ def webhook():
             
         else:
             state = db_helper.get_user_state(user_chat_id)
-            if state in ["awaiting_agency_data", "awaiting_custom_interval", "awaiting_new_admin_id"] and not is_user_admin(token, user_chat_id, chat["type"]):
+            if state in ["awaiting_agency_data", "awaiting_custom_interval", "awaiting_new_admin_id"] and not is_user_admin(token, sender_user_id, chat["type"]):
                 db_helper.set_user_state(user_chat_id, "normal")
-                send_telegram_message(token, user_chat_id, "❌ Akses Ditolak: Anda bukan Administrator Bot.", get_main_menu_markup(is_user_admin(token, user_chat_id, chat["type"])))
+                send_telegram_message(token, user_chat_id, "❌ Akses Ditolak: Anda bukan Administrator Bot.", get_main_menu_markup(is_user_admin(token, sender_user_id, chat["type"])))
             elif state == "awaiting_agency_data":
                 parts = [p.strip() for p in text.split("|")]
                 if len(parts) >= 3:
@@ -823,7 +824,7 @@ def webhook():
                     text_res = "❌ <b>Input Tidak Valid</b>\n\nHarap kirimkan angka bulat positif saja (dalam satuan menit). Contoh: <code>5</code> atau <code>30</code>."
                 
                 db_helper.set_user_state(user_chat_id, "normal")
-                send_telegram_message(token, user_chat_id, text_res, get_main_menu_markup(is_user_admin(token, user_chat_id, chat["type"])))
+                send_telegram_message(token, user_chat_id, text_res, get_main_menu_markup(is_user_admin(token, sender_user_id, chat["type"])))
                 
             elif state == "awaiting_new_admin_id":
                 try:
@@ -837,11 +838,11 @@ def webhook():
                     text_res = "❌ <b>Input Tidak Valid</b>\n\nHarap kirimkan angka bulat positif Telegram User ID. Contoh: <code>123456789</code>."
                 
                 db_helper.set_user_state(user_chat_id, "normal")
-                send_telegram_message(token, user_chat_id, text_res, get_main_menu_markup(is_user_admin(token, user_chat_id, chat["type"])))
+                send_telegram_message(token, user_chat_id, text_res, get_main_menu_markup(is_user_admin(token, sender_user_id, chat["type"])))
                 
             else:
                 db_helper.set_user_state(user_chat_id, "normal")
-                send_telegram_message(token, user_chat_id, "Kembali ke Menu Utama:", get_main_menu_markup(is_user_admin(token, user_chat_id, chat["type"])))
+                send_telegram_message(token, user_chat_id, "Kembali ke Menu Utama:", get_main_menu_markup(is_user_admin(token, sender_user_id, chat["type"])))
                 
     elif "callback_query" in data:
         callback_query = data["callback_query"]
