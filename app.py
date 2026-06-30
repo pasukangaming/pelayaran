@@ -288,14 +288,29 @@ def get_delete_agencies_markup(agencies):
     keyboard.append([{"text": "🔙 Kembali", "callback_data": "menu_agencies"}])
     return {"inline_keyboard": keyboard}
 
-def get_settings_markup(current_interval):
-    intervals = ["1", "3", "6", "12", "24"]
+def get_settings_markup(current_minutes):
+    presets = [
+        ("1 Menit", "1"),
+        ("5 Menit", "5"),
+        ("15 Menit", "15"),
+        ("30 Menit", "30"),
+        ("1 Jam", "60"),
+        ("3 Jam", "180"),
+        ("6 Jam", "360")
+    ]
     keyboard = []
-    row = []
-    for val in intervals:
-        text = f"✅ {val} Jam" if str(current_interval) == val else f"{val} Jam"
-        row.append({"text": text, "callback_data": f"set_interval:{val}"})
-    keyboard.append(row)
+    row1 = []
+    row2 = []
+    for i, (text, val) in enumerate(presets):
+        is_active = str(current_minutes) == val
+        btn_text = f"✅ {text}" if is_active else text
+        if i < 4:
+            row1.append({"text": btn_text, "callback_data": f"set_interval_min:{val}"})
+        else:
+            row2.append({"text": btn_text, "callback_data": f"set_interval_min:{val}"})
+    keyboard.append(row1)
+    keyboard.append(row2)
+    keyboard.append([{"text": "⌨️ Atur Waktu Kustom (Menit) 🔐", "callback_data": "menu_custom_interval"}])
     keyboard.append([{"text": "🚨 Hapus Semua Data Loker 🔐", "callback_data": "menu_clear_jobs"}])
     keyboard.append([{"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}])
     return {"inline_keyboard": keyboard}
@@ -409,14 +424,14 @@ def run_scrape_and_post(manual_trigger=False, user_chat_id=None):
         print("Scraper skipped: Telegram bot token or chat ID is missing.")
         return False, "Kredensial Telegram Bot belum diatur."
         
-    interval_hours = int(db_helper.get_setting("interval_hours", 1))
+    interval_minutes = int(db_helper.get_setting("interval_minutes", 60))
     last_run = int(db_helper.get_setting("last_run", 0))
     current_time = int(time.time())
     
     if not manual_trigger:
-        elapsed_hours = (current_time - last_run) / 3600
-        if elapsed_hours < interval_hours:
-            msg = f"Scraper dilompati. Selisih waktu ({elapsed_hours:.2f} jam) kurang dari interval ({interval_hours} jam)."
+        elapsed_minutes = (current_time - last_run) / 60
+        if elapsed_minutes < interval_minutes:
+            msg = f"Scraper dilompati. Selisih waktu ({elapsed_minutes:.2f} menit) kurang dari interval ({interval_minutes} menit)."
             print(msg)
             return False, msg
             
@@ -709,6 +724,23 @@ def webhook():
                 else:
                     text_res = f"❌ Tidak ditemukan lowongan dengan kata kunci: <b>{query}</b>.\n\nCoba cari kata kunci lainnya (misal: AB, Fitter, Waiter)."
                     
+            elif state == "awaiting_custom_interval":
+                try:
+                    minutes = int(text.strip())
+                    if minutes <= 0:
+                        raise ValueError()
+                    db_helper.set_setting("interval_minutes", minutes)
+                    db_helper.set_setting("interval_hours", None)
+                    db_helper.invalidate_settings_cache()
+                    
+                    text_res = (
+                        f"✅ <b>Interval Berhasil Diatur!</b>\n\n"
+                        f"Bot sekarang diatur untuk memeriksa loker setiap: <b>{minutes} Menit</b>.\n"
+                        f"<i>Pastikan cron job / pemanggil /run-cron Anda diatur lebih cepat dari interval ini agar dapat mendeteksi perubahan.</i>"
+                    )
+                except ValueError:
+                    text_res = "❌ <b>Input Tidak Valid</b>\n\nHarap kirimkan angka bulat positif saja (dalam satuan menit). Contoh: <code>5</code> atau <code>30</code>."
+                
                 db_helper.set_user_state(user_chat_id, "normal")
                 send_telegram_message(token, user_chat_id, text_res, get_main_menu_markup())
                 
@@ -1221,14 +1253,18 @@ def webhook():
             else:
                 local_time = "Belum pernah berjalan"
                 
-            interval = db_helper.get_setting("interval_hours", 1)
+            current_minutes = int(db_helper.get_setting("interval_minutes", 60))
+            if current_minutes >= 60 and current_minutes % 60 == 0:
+                interval_str = f"{current_minutes // 60} Jam"
+            else:
+                interval_str = f"{current_minutes} Menit"
             
             text_stats = (
                 f"📊 <b>Statistik & Informasi Sistem Bot</b>\n\n"
                 f"• <b>Total Lowongan Kerja:</b> {stats['total_jobs']} loker\n"
                 f"• <b>Total Agensi Terdaftar:</b> {stats['total_agencies']} agensi\n"
                 f"• <b>Total Pelanggan Alert:</b> {stats['total_subscribers']} user\n\n"
-                f"⏱ <b>Interval Scraping:</b> {interval} Jam sekali\n"
+                f"⏱ <b>Interval Scraping:</b> {interval_str} sekali\n"
                 f"🔄 <b>Terakhir Dipindai:</b> <code>{local_time}</code>\n"
                 f"📢 <b>Target Group ID:</b> <code>{target_chat_id}</code>\n\n"
                 f"<i>Sistem berjalan otomatis di server PythonAnywhere secara realtime.</i>"
@@ -1243,29 +1279,53 @@ def webhook():
             
         elif callback_data == "menu_settings":
             answer_callback_query(token, callback_query_id)
-            current_interval = db_helper.get_setting("interval_hours", 1)
+            current_minutes = int(db_helper.get_setting("interval_minutes", 60))
+            if current_minutes >= 60 and current_minutes % 60 == 0:
+                display_time = f"{current_minutes // 60} Jam"
+            else:
+                display_time = f"{current_minutes} Menit"
             edit_telegram_message(
                 token, 
                 user_chat_id, 
                 message_id, 
-                f"⏱️ <b>Pengaturan Interval Waktu Update</b>\n\n"
+                f"⏱️ <b>Pengaturan Interval Waktu Update 🔐</b>\n\n"
                 f"Pilih seberapa sering bot akan memposting loker baru jika terdeteksi.\n"
-                f"Interval aktif saat ini: <b>{current_interval} Jam</b>", 
-                get_settings_markup(current_interval)
+                f"Interval aktif saat ini: <b>{display_time}</b>", 
+                get_settings_markup(current_minutes)
             )
             
-        elif callback_data.startswith("set_interval:"):
-            hours = callback_data.split(":")[-1]
-            db_helper.set_setting("interval_hours", hours)
-            answer_callback_query(token, callback_query_id, f"Interval diatur ke {hours} jam.")
+        elif callback_data.startswith("set_interval_min:"):
+            minutes = int(callback_data.split(":")[-1])
+            db_helper.set_setting("interval_minutes", minutes)
+            db_helper.set_setting("interval_hours", None)
+            db_helper.invalidate_settings_cache()
+            
+            if minutes >= 60 and minutes % 60 == 0:
+                display_time = f"{minutes // 60} Jam"
+            else:
+                display_time = f"{minutes} Menit"
+                
+            answer_callback_query(token, callback_query_id, f"Interval diatur ke {display_time}.")
             edit_telegram_message(
                 token, 
                 user_chat_id, 
                 message_id, 
-                f"⏱️ <b>Pengaturan Interval Waktu Update</b>\n\n"
+                f"⏱️ <b>Pengaturan Interval Waktu Update 🔐</b>\n\n"
                 f"Pilih seberapa sering bot akan memposting loker baru jika terdeteksi.\n"
-                f"Interval aktif saat ini: <b>{hours} Jam</b>", 
-                get_settings_markup(hours)
+                f"Interval aktif saat ini: <b>{display_time}</b>", 
+                get_settings_markup(minutes)
+            )
+        elif callback_data == "menu_custom_interval":
+            answer_callback_query(token, callback_query_id)
+            db_helper.set_user_state(user_chat_id, "awaiting_custom_interval")
+            edit_telegram_message(
+                token,
+                user_chat_id,
+                message_id,
+                "⌨️ <b>Input Kustom Interval (Menit) 🔐</b>\n\n"
+                "Silakan ketik angka interval pemeriksaan loker dalam satuan menit (contoh: ketik <code>5</code> untuk memeriksa setiap 5 menit, atau <code>1</code> untuk 1 menit):\n\n"
+                "<i>Bot akan menunggu input angka dari Anda...</i>",
+                {"inline_keyboard": [[{"text": "🔙 Batal", "callback_data": "menu_settings"}]]}
             )
         elif callback_data == "menu_clear_jobs":
             answer_callback_query(token, callback_query_id)
