@@ -145,10 +145,10 @@ def get_main_menu_markup():
             ],
             [
                 {"text": "📊 Statistik Bot", "callback_data": "menu_stats"},
-                {"text": "🔄 Cek Loker Sekarang", "callback_data": "menu_scrape"}
+                {"text": "🔄 Cek Loker Sekarang 🔐", "callback_data": "menu_scrape"}
             ],
             [
-                {"text": "⚙️ Atur Interval", "callback_data": "menu_settings"},
+                {"text": "⚙️ Atur Interval 🔐", "callback_data": "menu_settings"},
                 {"text": "📢 Bagikan Bot", "callback_data": "menu_share"}
             ]
         ]
@@ -240,8 +240,8 @@ def get_agencies_menu_markup():
                 {"text": "📍 Cari Berdasarkan Lokasi", "callback_data": "menu_agencies_location"}
             ],
             [
-                {"text": "➕ Tambah Agency", "callback_data": "menu_add_agency"},
-                {"text": "❌ Hapus Agency", "callback_data": "menu_delete_agency_list"}
+                {"text": "➕ Tambah Agency 🔐", "callback_data": "menu_add_agency"},
+                {"text": "❌ Hapus Agency 🔐", "callback_data": "menu_delete_agency_list"}
             ],
             [
                 {"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}
@@ -253,8 +253,8 @@ def get_add_agency_options_markup():
     return {
         "inline_keyboard": [
             [
-                {"text": "✍️ Input Manual", "callback_data": "menu_add_agency_manual"},
-                {"text": "🔄 Update Otomatis", "callback_data": "menu_add_agency_auto"}
+                {"text": "✍️ Input Manual 🔐", "callback_data": "menu_add_agency_manual"},
+                {"text": "🔄 Update Otomatis 🔐", "callback_data": "menu_add_agency_auto"}
             ],
             [
                 {"text": "🔙 Batal", "callback_data": "menu_agencies"}
@@ -296,7 +296,7 @@ def get_settings_markup(current_interval):
         text = f"✅ {val} Jam" if str(current_interval) == val else f"{val} Jam"
         row.append({"text": text, "callback_data": f"set_interval:{val}"})
     keyboard.append(row)
-    keyboard.append([{"text": "🚨 Hapus Semua Data Loker", "callback_data": "menu_clear_jobs"}])
+    keyboard.append([{"text": "🚨 Hapus Semua Data Loker 🔐", "callback_data": "menu_clear_jobs"}])
     keyboard.append([{"text": "🔙 Kembali ke Menu Utama", "callback_data": "menu_main"}])
     return {"inline_keyboard": keyboard}
 
