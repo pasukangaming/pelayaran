@@ -44,7 +44,7 @@ def categorize_job(position):
     fnb_kws = ['waiter', 'waitress', 'restaurant steward', 'buffet steward', 'wine steward', 'messboy', 'f&b', 'food & beverage', 'galley steward', 'restaurant', 'snack', 'server']
     culinary_kws = ['cook', 'chef', 'galley', 'culinary', 'commis', 'baker', 'pastry', 'butcher', 'cook helper', 'demi chef', 'kitchen']
     bar_kws = ['bar ', 'bartender', 'bar utility', 'bar steward', 'bar boy', 'bar keep', 'bar supervisor', 'bar manager', 'bar server', 'bar cleaner']
-    laundry_kws = ['laundry', 'laundryman', 'laundry utility', 'laundry operator', 'laundry attendant']
+    laundry_kws = ['laundry', 'laundryman', 'laundry utility', 'laundry operator', 'laundry attendant', 'tailor', 'linen keeper']
     landbase_kws = ['hotel darat', 'receptionist', 'front office', 'spa ', 'butler', 'cleaner', 'landbase']
     
     if any(kw in pos_lower for kw in bar_kws):
@@ -695,7 +695,7 @@ def webhook():
                 "fnb": ['waiter', 'waitress', 'restaurant steward', 'buffet steward', 'wine steward', 'messboy', 'f&b', 'food & beverage', 'galley steward', 'restaurant', 'snack', 'server'],
                 "culinary": ['cook', 'chef', 'galley', 'culinary', 'commis', 'baker', 'pastry', 'butcher', 'cook helper', 'demi chef', 'kitchen'],
                 "bar": ['bar ', 'bartender', 'bar utility', 'bar steward', 'bar boy', 'bar keep', 'bar supervisor', 'bar manager', 'bar server', 'bar cleaner'],
-                "laundry": ['laundry', 'laundryman', 'laundry utility', 'laundry operator', 'laundry attendant'],
+                "laundry": ['laundry', 'laundryman', 'laundry utility', 'laundry operator', 'laundry attendant', 'tailor', 'linen keeper'],
                 "landbase": ['hotel darat', 'receptionist', 'front office', 'spa ', 'butler', 'cleaner', 'landbase']
             }
             
