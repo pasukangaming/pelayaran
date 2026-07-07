@@ -604,7 +604,7 @@ def run_manual_scrape_thread(token, chat_id, user_chat_id, message_id):
                 f"Memindai: <b>{src['name']}</b>...\n\n"
                 f"<i>Proses pemindaian dilakukan 1 per 1 agar tidak bentrok. Mohon tunggu...</i>"
             )
-            if index % 2 == 0 or index == total_sources - 1:
+            if index % 3 == 0 and index < total_sources - 1:
                 edit_telegram_message(token, user_chat_id, message_id, progress_text)
                 
             jobs = []
@@ -660,6 +660,7 @@ def run_manual_scrape_thread(token, chat_id, user_chat_id, message_id):
             f"🎉 <b>Total Loker Baru Terkirim: {new_jobs_total}</b>"
         )
         is_admin = is_user_admin(token, user_chat_id)
+        time.sleep(1.5)
         edit_telegram_message(token, user_chat_id, message_id, final_text, get_main_menu_markup(is_admin))
         db_helper.set_setting("last_run", int(time.time()))
         db_helper.prune_sent_jobs()
