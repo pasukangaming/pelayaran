@@ -517,13 +517,24 @@ def run_scrape_and_post(manual_trigger=False, user_chat_id=None):
             print(msg)
             return False, msg
             
-    print("Starting parallel scrape of all official sources...")
+    print("Starting parallel scrape of all official sources and agencies...")
     db_sources = db_helper.get_sources()
+    agencies = db_helper.get_agencies()
+    
     sources = [
         {"name": src["name"], "url": src["url"], "type": src["type"]}
         for src in db_sources
         if src["url"] and (src["url"].startswith("http://") or src["url"].startswith("https://"))
     ]
+    
+    seen_urls = {src["url"].lower().rstrip('/') for src in sources}
+    for ag in agencies:
+        url = ag["website"]
+        if url and (url.startswith("http://") or url.startswith("https://")):
+            clean_url = url.lower().rstrip('/')
+            if clean_url not in seen_urls:
+                sources.append({"name": ag["name"], "url": url, "type": "web"})
+                seen_urls.add(clean_url)
     
     # Run parallel scrape via Google Apps Script Proxy
     jobs = scrapers.scrape_all_sources_parallel(sources)
@@ -604,11 +615,23 @@ def scrape_step():
         return jsonify({"status": "error", "message": "Credentials missing"})
         
     db_sources = db_helper.get_sources()
+    agencies = db_helper.get_agencies()
+    
     sources = [
         {"name": src["name"], "url": src["url"], "type": src["type"]}
         for src in db_sources
         if src["url"] and (src["url"].startswith("http://") or src["url"].startswith("https://"))
     ]
+    
+    seen_urls = {src["url"].lower().rstrip('/') for src in sources}
+    for ag in agencies:
+        url = ag["website"]
+        if url and (url.startswith("http://") or url.startswith("https://")):
+            clean_url = url.lower().rstrip('/')
+            if clean_url not in seen_urls:
+                sources.append({"name": ag["name"], "url": url, "type": "web"})
+                seen_urls.add(clean_url)
+                
     total_sources = len(sources)
     
     # Load state from DB
