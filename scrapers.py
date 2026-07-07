@@ -18,10 +18,10 @@ def get_html_content(url):
         if proxy_url:
             print(f"Fetching via Google Apps Script Proxy: {url}")
             target_url = f"{proxy_url}?url={urllib.parse.quote(url)}"
-            response = requests.get(target_url, timeout=25)
+            response = requests.get(target_url, timeout=7)
         else:
             print(f"Fetching directly: {url}")
-            response = requests.get(url, headers=headers, timeout=15)
+            response = requests.get(url, headers=headers, timeout=5)
             
         response.raise_for_status()
         return response.text
@@ -230,3 +230,19 @@ def scrape_all_sources_parallel(sources):
         all_jobs.extend(jobs)
         
     return all_jobs
+
+def scrape_single_source(src):
+    url = src["url"]
+    html_text = get_html_content(url)
+    if not html_text or "Error: " in html_text[:15]:
+        return []
+    try:
+        if src["type"] == "built-in" and src["name"] == "Crewell":
+            return parse_crewell_html(html_text)
+        elif src["type"] == "rss":
+            return parse_rss_html(html_text)
+        else:
+            return parse_generic_html(html_text, url)
+    except Exception as e:
+        print(f"Error parsing source {src['name']}: {e}")
+        return []
