@@ -218,9 +218,11 @@ def scrape_all_sources_parallel(sources):
             
         jobs = []
         try:
-            if src["type"] == "built-in" and src["name"] == "Crewell":
+            name_lower = src["name"].lower()
+            url_lower = url.lower()
+            if "crewell" in name_lower or "crewell.net" in url_lower:
                 jobs = parse_crewell_html(html_text)
-            elif src["type"] == "rss":
+            elif src.get("type") == "rss" or url_lower.endswith("/feed") or url_lower.endswith(".xml") or "/rss" in url_lower:
                 jobs = parse_rss_html(html_text)
             else:
                 jobs = parse_generic_html(html_text, url)
@@ -237,9 +239,11 @@ def scrape_single_source(src):
     if not html_text or "Error: " in html_text[:15]:
         return []
     try:
-        if src["type"] == "built-in" and src["name"] == "Crewell":
+        name_lower = src["name"].lower()
+        url_lower = url.lower()
+        if "crewell" in name_lower or "crewell.net" in url_lower:
             return parse_crewell_html(html_text)
-        elif src["type"] == "rss":
+        elif src.get("type") == "rss" or url_lower.endswith("/feed") or url_lower.endswith(".xml") or "/rss" in url_lower:
             return parse_rss_html(html_text)
         else:
             return parse_generic_html(html_text, url)
