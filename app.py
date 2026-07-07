@@ -37,7 +37,7 @@ def get_bot_credentials():
 def invalidate_cred_cache():
     _cred_cache.clear()
 
-def is_user_admin(token, user_chat_id, chat_type="private"):
+def is_user_admin(token, user_chat_id, chat_type="private", group_id=None):
     admins = db_helper.get_bot_admins()
     admins = [str(a) for a in admins if a and str(a).lower() != "none"]
     
@@ -45,7 +45,7 @@ def is_user_admin(token, user_chat_id, chat_type="private"):
     if not admin_id or str(admin_id).strip() == "" or str(admin_id).lower() == "none":
         admin_id = None
     
-    print(f"[DEBUG] Checking admin status for user_chat_id: {user_chat_id}, chat_type: {chat_type}")
+    print(f"[DEBUG] Checking admin status for user_chat_id: {user_chat_id}, chat_type: {chat_type}, group_id: {group_id}")
     print(f"[DEBUG] Current admins list: {admins}, owner_admin_id: {admin_id}")
     
     if admin_id:
@@ -76,17 +76,17 @@ def is_user_admin(token, user_chat_id, chat_type="private"):
         return True
         
     if chat_type in ["group", "supergroup"]:
-        target_group_id = db_helper.get_setting("telegram_chat_id")
-        if target_group_id and str(target_group_id).startswith("-"):
+        chk_group_id = group_id or db_helper.get_setting("telegram_chat_id")
+        if chk_group_id and str(chk_group_id).startswith("-"):
             try:
                 payload = {
-                    "chat_id": target_group_id,
+                    "chat_id": chk_group_id,
                     "user_id": user_chat_id
                 }
                 res = call_telegram_api("getChatMember", payload)
                 if res and res.get("ok"):
                     status = res["result"].get("status")
-                    print(f"[DEBUG] Group {target_group_id} member status check for user {user_chat_id}: {status}")
+                    print(f"[DEBUG] Group {chk_group_id} member status check for user {user_chat_id}: {status}")
                     if status in ["creator", "administrator"]:
                         print(f"[DEBUG] Group admin/creator - ACCESS GRANTED")
                         return True
@@ -770,7 +770,7 @@ def webhook():
                 token, 
                 user_chat_id, 
                 "🚢 <b>Selamat datang para siswa</b>\n\nSilakan pilih menu bot di bawah ini:", 
-                get_main_menu_markup(is_user_admin(token, sender_user_id, chat["type"]))
+                get_main_menu_markup(is_user_admin(token, sender_user_id, chat["type"], user_chat_id))
             )
             db_helper.set_user_state(user_chat_id, "normal")
             
@@ -779,9 +779,9 @@ def webhook():
             
         else:
             state = db_helper.get_user_state(user_chat_id)
-            if state in ["awaiting_agency_data", "awaiting_custom_interval", "awaiting_new_admin_id"] and not is_user_admin(token, sender_user_id, chat["type"]):
+            if state in ["awaiting_agency_data", "awaiting_custom_interval", "awaiting_new_admin_id"] and not is_user_admin(token, sender_user_id, chat["type"], user_chat_id):
                 db_helper.set_user_state(user_chat_id, "normal")
-                send_telegram_message(token, user_chat_id, "❌ Akses Ditolak: Anda bukan Administrator Bot.", get_main_menu_markup(is_user_admin(token, sender_user_id, chat["type"])))
+                send_telegram_message(token, user_chat_id, "❌ Akses Ditolak: Anda bukan Administrator Bot.", get_main_menu_markup(is_user_admin(token, sender_user_id, chat["type"], user_chat_id)))
             elif state == "awaiting_agency_data":
                 parts = [p.strip() for p in text.split("|")]
                 if len(parts) >= 3:
@@ -849,7 +849,7 @@ def webhook():
                     text_res = "❌ <b>Input Tidak Valid</b>\n\nHarap kirimkan angka bulat positif saja (dalam satuan menit). Contoh: <code>5</code> atau <code>30</code>."
                 
                 db_helper.set_user_state(user_chat_id, "normal")
-                send_telegram_message(token, user_chat_id, text_res, get_main_menu_markup(is_user_admin(token, sender_user_id, chat["type"])))
+                send_telegram_message(token, user_chat_id, text_res, get_main_menu_markup(is_user_admin(token, sender_user_id, chat["type"], user_chat_id)))
                 
             elif state == "awaiting_new_admin_id":
                 try:
@@ -863,11 +863,11 @@ def webhook():
                     text_res = "❌ <b>Input Tidak Valid</b>\n\nHarap kirimkan angka bulat positif Telegram User ID. Contoh: <code>123456789</code>."
                 
                 db_helper.set_user_state(user_chat_id, "normal")
-                send_telegram_message(token, user_chat_id, text_res, get_main_menu_markup(is_user_admin(token, sender_user_id, chat["type"])))
+                send_telegram_message(token, user_chat_id, text_res, get_main_menu_markup(is_user_admin(token, sender_user_id, chat["type"], user_chat_id)))
                 
             else:
                 db_helper.set_user_state(user_chat_id, "normal")
-                send_telegram_message(token, user_chat_id, "Kembali ke Menu Utama:", get_main_menu_markup(is_user_admin(token, sender_user_id, chat["type"])))
+                send_telegram_message(token, user_chat_id, "Kembali ke Menu Utama:", get_main_menu_markup(is_user_admin(token, sender_user_id, chat["type"], user_chat_id)))
                 
     elif "callback_query" in data:
         callback_query = data["callback_query"]
@@ -877,6 +877,7 @@ def webhook():
         callback_data = callback_query["data"]
         clicker_user_id = callback_query["from"]["id"]
         chat_type = callback_query["message"]["chat"]["type"]
+        group_id = callback_query["message"]["chat"]["id"] if chat_type in ["group", "supergroup"] else None
         
         # Check admin credentials
         admin_callbacks = [
@@ -892,7 +893,7 @@ def webhook():
             callback_data.startswith("delete_admin:")
         )
         
-        if is_admin_req and not is_user_admin(token, clicker_user_id, chat_type):
+        if is_admin_req and not is_user_admin(token, clicker_user_id, chat_type, group_id):
             answer_callback_query(
                 token, 
                 callback_query_id, 
@@ -908,7 +909,7 @@ def webhook():
                 user_chat_id, 
                 message_id, 
                 "🚢 <b>Selamat datang para siswa</b>\n\nSilakan pilih menu bot di bawah ini:", 
-                get_main_menu_markup(is_user_admin(token, clicker_user_id, chat_type))
+                get_main_menu_markup(is_user_admin(token, clicker_user_id, chat_type, group_id))
             )
             db_helper.set_user_state(user_chat_id, "normal")
             
