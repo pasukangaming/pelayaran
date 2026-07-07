@@ -845,7 +845,16 @@ def set_owner_route(owner_id):
         return f"Success! Owner Admin has been set to {owner_id}. Message /start to the bot on that account to see the admin menus.", 200
     except Exception as e:
         return f"Error setting owner: {e}", 500
-
+@app.route("/version")
+def version_route():
+    import os
+    try:
+        mtime = os.path.getmtime(__file__)
+        from datetime import datetime, timezone, timedelta
+        dt = datetime.fromtimestamp(mtime, tz=timezone.utc).astimezone(timezone(timedelta(hours=7)))
+        return f"Version: 2.3<br>Last modified: {dt.strftime('%Y-%m-%d %H:%M:%S WIB')}", 200
+    except Exception as e:
+        return f"Error: {e}", 500
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
