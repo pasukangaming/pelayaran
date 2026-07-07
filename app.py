@@ -733,6 +733,16 @@ def reset_owner_route():
     except Exception as e:
         return f"Error resetting owner: {e}", 500
 
+@app.route("/set-owner/<owner_id>")
+def set_owner_route(owner_id):
+    try:
+        db_helper.set_setting("owner_admin_id", str(owner_id))
+        db_helper.add_bot_admin(str(owner_id))
+        db_helper.invalidate_settings_cache()
+        return f"Success! Owner Admin has been set to {owner_id}. Message /start to the bot on that account to see the admin menus.", 200
+    except Exception as e:
+        return f"Error setting owner: {e}", 500
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
