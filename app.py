@@ -589,6 +589,105 @@ def run_scrape_and_post(manual_trigger=False, user_chat_id=None):
         
     return True, f"Scraping selesai. Menemukan {new_jobs_count} loker baru."
 
+def run_manual_scrape_thread(token, chat_id, user_chat_id, message_id):
+    try:
+        db_sources = db_helper.get_sources()
+        agencies = db_helper.get_agencies()
+        
+        sources = [
+            {"name": src["name"], "url": src["url"], "type": src["type"]}
+            for src in db_sources
+            if src["url"] and (src["url"].startswith("http://") or src["url"].startswith("https://"))
+        ]
+        
+        seen_urls = {src["url"].lower().rstrip('/') for src in sources}
+        for ag in agencies:
+            url = ag["website"]
+            if url and (url.startswith("http://") or url.startswith("https://")):
+                clean_url = url.lower().rstrip('/')
+                if clean_url not in seen_urls:
+                    sources.append({"name": ag["name"], "url": url, "type": "web"})
+                    seen_urls.add(clean_url)
+                    
+        total_sources = len(sources)
+        results_summary = []
+        new_jobs_total = 0
+        
+        for index, src in enumerate(sources):
+            progress = int((index / total_sources) * 100)
+            filled = int(progress / 10)
+            bar = "▓" * filled + "░" * (10 - filled)
+            
+            progress_text = (
+                f"🔄 <b>Sedang Memindai Lowongan Pelaut...</b>\n\n"
+                f"<code>[{bar}] {progress}% ({index}/{total_sources})</code>\n"
+                f"Memindai: <b>{src['name']}</b>...\n\n"
+                f"<i>Proses pemindaian dilakukan 1 per 1 agar tidak bentrok. Mohon tunggu...</i>"
+            )
+            if index % 2 == 0 or index == total_sources - 1:
+                edit_telegram_message(token, user_chat_id, message_id, progress_text)
+                
+            jobs = []
+            try:
+                jobs = scrapers.scrape_single_source(src)
+            except Exception as e:
+                print(f"Error scraping {src['name']}: {e}")
+                
+            new_jobs_from_source = 0
+            for job in reversed(jobs):
+                try:
+                    job_id = job["id"]
+                    db_helper.save_job(job)
+                    if not db_helper.is_job_sent(job_id):
+                        message = format_job_message(job)
+                        success = send_telegram_message(token, chat_id, message)
+                        if success and success.get("ok"):
+                            db_helper.mark_job_as_sent(job_id)
+                            new_jobs_from_source += 1
+                            
+                            job_cat = categorize_job(job["position"])
+                            if job_cat != "other":
+                                subs = db_helper.get_subscribers_by_category(job_cat)
+                                sal = job['salary'].strip()
+                                if not sal or sal.lower() in ["hubungi perusahaan", "negotiable", "hubungi agency", "discuss", "unknown", "hubungi perusahaan / agency"]:
+                                    salary_str = "Sesuai Standar Perusahaan"
+                                else:
+                                    salary_str = scrapers.escape_html(sal)
+                                    
+                                alert_msg = (
+                                    f"🔔 <b>[ALERT LANGGANAN] Loker Baru Sesuai Departemen Anda!</b>\n\n"
+                                    f"💼 <b>Posisi:</b> {scrapers.escape_html(job['position'])}\n"
+                                    f"🏢 <b>Perusahaan:</b> {scrapers.escape_html(job['company'])}\n"
+                                    f"💵 <b>Gaji:</b> {salary_str}\n"
+                                    f"🔗 <a href='{job['link']}'>Detail &amp; Apply Loker</a>"
+                                )
+                                for sub_chat_id in subs:
+                                    send_telegram_message(token, sub_chat_id, alert_msg)
+                                    
+                            time.sleep(1)
+                except Exception as inner_e:
+                    print(f"Error processing job: {inner_e}")
+                    
+            if len(jobs) > 0 or new_jobs_from_source > 0:
+                results_summary.append(f"• <b>{src['name']}</b>: {len(jobs)} loker ({new_jobs_from_source} baru)")
+                new_jobs_total += new_jobs_from_source
+                
+        summary_text = "\n".join(results_summary)
+        final_text = (
+            f"✅ <b>Pemeriksaan Loker Selesai!</b>\n\n"
+            f"📋 <b>Hasil Ringkasan Pemindaian:</b>\n"
+            f"{summary_text if summary_text else '• Semua sumber bersih/tidak ada loker baru.'}\n\n"
+            f"🎉 <b>Total Loker Baru Terkirim: {new_jobs_total}</b>"
+        )
+        is_admin = is_user_admin(token, user_chat_id)
+        edit_telegram_message(token, user_chat_id, message_id, final_text, get_main_menu_markup(is_admin))
+        db_helper.set_setting("last_run", int(time.time()))
+        db_helper.prune_sent_jobs()
+        
+    except Exception as e:
+        print(f"Error in manual scrape thread: {e}")
+        edit_telegram_message(token, user_chat_id, message_id, f"❌ <b>Terjadi kesalahan saat pemindaian:</b> {e}", get_main_menu_markup(True))
+
 @app.route("/")
 def home():
     token, chat_id = get_bot_credentials()
@@ -1615,27 +1714,12 @@ def webhook():
                 "🔄 <b>Sedang memulai pemeriksaan lowongan...</b>\n\nMenghubungkan ke server..."
             )
             
-            # Reset state in DB
-            db_helper.set_setting("scrape_state_results", "[]")
-            db_helper.set_setting("scrape_state_new_jobs", "0")
-            
-            # Trigger first step (index 0) via Google Apps Script Proxy to bypass PythonAnywhere sandbox blocking
-            host = request.host
-            if not host:
-                host = "amanputradewa.pythonanywhere.com"
-                
-            target_url = f"https://{host}/scrape-step?index=0&user_chat_id={user_chat_id}&message_id={message_id}"
-            proxy_url = db_helper.get_setting("google_proxy_url")
-            
-            if proxy_url:
-                next_url = f"{proxy_url}?url={urllib.parse.quote(target_url)}"
-            else:
-                next_url = target_url
-                
-            try:
-                requests.get(next_url, timeout=0.5)
-            except requests.exceptions.RequestException:
-                pass
+            import threading
+            threading.Thread(
+                target=run_manual_scrape_thread,
+                args=(token, chat_id, user_chat_id, message_id),
+                daemon=True
+            ).start()
             
     return jsonify({"status": "ok"})
 
