@@ -517,12 +517,12 @@ def run_scrape_and_post(manual_trigger=False, user_chat_id=None):
             print(msg)
             return False, msg
             
-    print("Starting parallel scrape of all official agencies...")
-    agencies = db_helper.get_agencies()
+    print("Starting parallel scrape of all official sources...")
+    db_sources = db_helper.get_sources()
     sources = [
-        {"name": ag["name"], "url": ag["website"], "type": "web"}
-        for ag in agencies
-        if ag["website"] and (ag["website"].startswith("http://") or ag["website"].startswith("https://"))
+        {"name": src["name"], "url": src["url"], "type": src["type"]}
+        for src in db_sources
+        if src["url"] and (src["url"].startswith("http://") or src["url"].startswith("https://"))
     ]
     
     # Run parallel scrape via Google Apps Script Proxy
@@ -603,11 +603,11 @@ def scrape_step():
     if not token or not chat_id:
         return jsonify({"status": "error", "message": "Credentials missing"})
         
-    agencies = db_helper.get_agencies()
+    db_sources = db_helper.get_sources()
     sources = [
-        {"name": ag["name"], "url": ag["website"], "type": "web"}
-        for ag in agencies
-        if ag["website"] and (ag["website"].startswith("http://") or ag["website"].startswith("https://"))
+        {"name": src["name"], "url": src["url"], "type": src["type"]}
+        for src in db_sources
+        if src["url"] and (src["url"].startswith("http://") or src["url"].startswith("https://"))
     ]
     total_sources = len(sources)
     
@@ -652,7 +652,7 @@ def scrape_step():
     try:
         jobs = []
         try:
-            jobs = scrapers.scrape_generic(src["url"])
+            jobs = scrapers.scrape_single_source(src)
         except Exception as e:
             print(f"Error scraping {src['name']}: {e}")
             
@@ -1394,9 +1394,12 @@ def webhook():
             stats = db_helper.get_stats()
             _, target_chat_id = get_bot_credentials()
             
+            from datetime import datetime, timezone, timedelta
             last_run = int(db_helper.get_setting("last_run", 0))
             if last_run > 0:
-                local_time = time.strftime('%d-%m-%Y %H:%M:%S', time.localtime(last_run))
+                dt_utc = datetime.fromtimestamp(last_run, tz=timezone.utc)
+                dt_wib = dt_utc.astimezone(timezone(timedelta(hours=7)))
+                local_time = dt_wib.strftime('%d-%m-%Y %H:%M:%S WIB')
             else:
                 local_time = "Belum pernah berjalan"
                 
